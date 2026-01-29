@@ -1,0 +1,175 @@
+{
+  "_nodes": {
+    "total": 1,
+    "successful": 1,
+    "failed": 0
+  },
+  "cluster_name": "test-cluster",
+  "info": {
+    "cluster_version": "3.4.0",
+    "processors": {
+      "search": {
+        "hybrid": {
+          "comb_geometric_processors": 1,
+          "comb_rrf_processors": 2,
+          "norm_l2_processors": 1,
+          "norm_minmax_processors": 3,
+          "comb_harmonic_processors": 0,
+          "comb_arithmetic_processors": 5,
+          "norm_zscore_processors": 0,
+          "rank_based_normalization_processors": 2,
+          "normalization_processors": 10
+        },
+        "rerank_ml_processors": 3,
+        "rerank_by_field_processors": 1,
+        "neural_sparse_two_phase_processors": 2,
+        "neural_query_enricher_processors": 4
+      },
+      "ingest": {
+        "sparse_encoding_processors": 5,
+        "skip_existing_processors": 2,
+        "text_image_embedding_processors": 1,
+        "text_chunking_delimiter_processors": 3,
+        "text_embedding_processors_in_pipelines": 10,
+        "text_chunking_fixed_token_length_processors": 2,
+        "text_chunking_fixed_char_length_processors": 1,
+        "text_chunking_processors": 6
+      }
+    }
+  },
+  "all_nodes": {
+    "query": {
+      "hybrid": {
+        "hybrid_query_with_pagination_requests": 50,
+        "hybrid_query_with_filter_requests": 100,
+        "hybrid_query_with_inner_hits_requests": 25,
+        "hybrid_query_requests": 500
+      },
+      "neural": {
+        "neural_query_against_semantic_sparse_requests": 150,
+        "neural_query_requests": 1000,
+        "neural_query_against_semantic_dense_requests": 300,
+        "neural_query_against_knn_requests": 550
+      },
+      "neural_sparse": {
+        "neural_sparse_query_requests": 200,
+        "seismic_query_requests": 75
+      }
+    },
+    "semantic_highlighting": {
+      "semantic_highlighting_request_count": 50,
+      "semantic_highlighting_batch_request_count": 10
+    },
+    "processors": {
+      "search": {
+        "neural_sparse_two_phase_executions": 180,
+        "hybrid": {
+          "comb_harmonic_executions": 20,
+          "norm_zscore_executions": 15,
+          "comb_rrf_executions": 100,
+          "norm_l2_executions": 50,
+          "rank_based_normalization_processor_executions": 80,
+          "comb_arithmetic_executions": 200,
+          "normalization_processor_executions": 400,
+          "comb_geometric_executions": 30,
+          "norm_minmax_executions": 150
+        },
+        "rerank_by_field_executions": 50,
+        "neural_query_enricher_executions": 300,
+        "rerank_ml_executions": 120
+      },
+      "ingest": {
+        "skip_existing_executions": 500,
+        "text_chunking_fixed_token_length_executions": 1000,
+        "sparse_encoding_executions": 2500,
+        "text_chunking_fixed_char_length_executions": 800,
+        "text_chunking_executions": 3000,
+        "text_embedding_executions": 5000,
+        "semantic_field_executions": 1500,
+        "semantic_field_chunking_executions": 600,
+        "text_chunking_delimiter_executions": 400,
+        "text_image_embedding_executions": 200
+      }
+    },
+    "memory": {
+      "sparse": {
+        "sparse_memory_usage": 1024.5,
+        "clustered_posting_usage": 512.25,
+        "forward_index_usage": 256.75
+      }
+    }
+  },
+  "nodes": {
+    "test-node-1": {
+      "query": {
+        "hybrid": {
+          "hybrid_query_with_pagination_requests": 50,
+          "hybrid_query_with_filter_requests": 100,
+          "hybrid_query_with_inner_hits_requests": 25,
+          "hybrid_query_requests": 500
+        },
+        "neural": {
+          "neural_query_against_semantic_sparse_requests": 150,
+          "neural_query_requests": 1000,
+          "neural_query_against_semantic_dense_requests": 300,
+          "neural_query_against_knn_requests": 550
+        },
+        "neural_sparse": {
+          "neural_sparse_query_requests": 200,
+          "seismic_query_requests": 75
+        },
+        "memory": {
+          "sparse": {
+            "sparse_memory_usage_percentage": 5.5,
+            "sparse_memory_usage": 1024.5,
+            "clustered_posting_usage": 512.25,
+            "forward_index_usage": 256.75
+          }
+        }
+      },
+      "semantic_highlighting": {
+        "semantic_highlighting_request_count": 50,
+        "semantic_highlighting_batch_request_count": 10
+      },
+      "processors": {
+        "search": {
+          "neural_sparse_two_phase_executions": 180,
+          "hybrid": {
+            "comb_harmonic_executions": 20,
+            "norm_zscore_executions": 15,
+            "comb_rrf_executions": 100,
+            "norm_l2_executions": 50,
+            "rank_based_normalization_processor_executions": 80,
+            "comb_arithmetic_executions": 200,
+            "normalization_processor_executions": 400,
+            "comb_geometric_executions": 30,
+            "norm_minmax_executions": 150
+          },
+          "rerank_by_field_executions": 50,
+          "neural_query_enricher_executions": 300,
+          "rerank_ml_executions": 120
+        },
+        "ingest": {
+          "skip_existing_executions": 500,
+          "text_chunking_fixed_token_length_executions": 1000,
+          "sparse_encoding_executions": 2500,
+          "text_chunking_fixed_char_length_executions": 800,
+          "text_chunking_executions": 3000,
+          "text_embedding_executions": 5000,
+          "semantic_field_executions": 1500,
+          "semantic_field_chunking_executions": 600,
+          "text_chunking_delimiter_executions": 400,
+          "text_image_embedding_executions": 200
+        }
+      },
+      "memory": {
+        "sparse": {
+          "sparse_memory_usage_percentage": 5.5,
+          "sparse_memory_usage": 1024.5,
+          "clustered_posting_usage": 512.25,
+          "forward_index_usage": 256.75
+        }
+      }
+    }
+  }
+}

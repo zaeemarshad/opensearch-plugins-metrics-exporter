@@ -1,0 +1,334 @@
+{
+  "_nodes": {
+    "total": 9,
+    "successful": 9,
+    "failed": 0
+  },
+  "cluster_name": "osearch-store-cell-1",
+  "circuit_breaker_triggered": false,
+  "model_index_status": null,
+  "nodes": {
+    "_LV2KO5cQgi9IC77HdTiEA": {
+      "remote_vector_index_build_stats": {
+        "repository_stats": {
+          "successful_read_time_in_millis": 0,
+          "write_success_count": 0,
+          "write_failure_count": 0,
+          "successful_write_time_in_millis": 0,
+          "read_success_count": 0,
+          "read_failure_count": 0
+        },
+        "build_stats": {
+          "remote_index_build_flush_time_in_millis": 0,
+          "remote_index_build_current_merge_size": 0,
+          "remote_index_build_current_merge_operations": 0,
+          "remote_index_build_current_flush_operations": 0,
+          "remote_index_build_current_flush_size": 0,
+          "remote_index_build_merge_time_in_millis": 0
+        },
+        "client_stats": {
+          "status_request_failure_count": 0,
+          "status_request_success_count": 0,
+          "index_build_success_count": 0,
+          "index_build_failure_count": 0,
+          "build_request_failure_count": 0,
+          "build_request_success_count": 0,
+          "waiting_time_in_ms": 0
+        }
+      },
+      "max_distance_query_with_filter_requests": 1075,
+      "graph_memory_usage_percentage": 0.4606088,
+      "graph_query_requests": 89,
+      "graph_memory_usage": 18419,
+      "cache_capacity_reached": false,
+      "load_success_count": 18,
+      "training_memory_usage": 0,
+      "indices_in_cache": {
+        "test_20250630_01_catalog_en": {
+          "graph_memory_usage": 18419,
+          "graph_memory_usage_percentage": 0.4606088,
+          "graph_count": 3
+        }
+      },
+      "script_query_errors": 0,
+      "hit_count": 71,
+      "knn_query_requests": 58,
+      "total_load_time": 41365739,
+      "miss_count": 18,
+      "min_score_query_requests": 0,
+      "knn_query_with_filter_requests": 16,
+      "training_memory_usage_percentage": 0.0,
+      "max_distance_query_requests": 1075,
+      "lucene_initialized": false,
+      "graph_index_requests": 0,
+      "faiss_initialized": true,
+      "load_exception_count": 0,
+      "training_errors": 0,
+      "min_score_query_with_filter_requests": 0,
+      "eviction_count": 0,
+      "nmslib_initialized": false,
+      "script_compilations": 0,
+      "script_query_requests": 0,
+      "graph_stats": {
+        "refresh": {
+          "total_time_in_millis": 1188,
+          "total": 193
+        },
+        "merge": {
+          "current": 0,
+          "total": 16,
+          "total_time_in_millis": 1940,
+          "current_docs": 0,
+          "total_docs": 16151,
+          "total_size_in_bytes": 49152,
+          "current_size_in_bytes": 0
+        }
+      },
+      "graph_query_errors": 0,
+      "indexing_from_model_degraded": false,
+      "graph_index_errors": 0,
+      "training_requests": 0,
+      "script_compilation_errors": 0
+    },
+    "enX59vgaQzqbomAYIKurfg": {
+      "remote_vector_index_build_stats": {
+        "repository_stats": {
+          "read_success_count": 0,
+          "read_failure_count": 0,
+          "successful_read_time_in_millis": 0,
+          "write_success_count": 0,
+          "write_failure_count": 0,
+          "successful_write_time_in_millis": 0
+        },
+        "client_stats": {
+          "status_request_failure_count": 0,
+          "status_request_success_count": 0,
+          "index_build_success_count": 0,
+          "index_build_failure_count": 0,
+          "build_request_failure_count": 0,
+          "build_request_success_count": 0,
+          "waiting_time_in_ms": 0
+        },
+        "build_stats": {
+          "remote_index_build_flush_time_in_millis": 0,
+          "remote_index_build_current_merge_operations": 0,
+          "remote_index_build_current_flush_operations": 0,
+          "remote_index_build_current_merge_size": 0,
+          "remote_index_build_current_flush_size": 0,
+          "remote_index_build_merge_time_in_millis": 0
+        }
+      },
+      "max_distance_query_with_filter_requests": 0,
+      "graph_memory_usage_percentage": 0.0,
+      "graph_query_requests": 0,
+      "graph_memory_usage": 0,
+      "cache_capacity_reached": false,
+      "load_success_count": 0,
+      "training_memory_usage": 0,
+      "indices_in_cache": {},
+      "script_query_errors": 0,
+      "hit_count": 0,
+      "knn_query_requests": 0,
+      "total_load_time": 0,
+      "miss_count": 0,
+      "min_score_query_requests": 0,
+      "knn_query_with_filter_requests": 0,
+      "training_memory_usage_percentage": 0.0,
+      "max_distance_query_requests": 0,
+      "lucene_initialized": false,
+      "graph_index_requests": 0,
+      "faiss_initialized": false,
+      "load_exception_count": 0,
+      "training_errors": 0,
+      "min_score_query_with_filter_requests": 0,
+      "eviction_count": 0,
+      "nmslib_initialized": false,
+      "script_compilations": 0,
+      "script_query_requests": 0,
+      "graph_stats": {
+        "merge": {
+          "current": 0,
+          "total": 0,
+          "total_time_in_millis": 0,
+          "current_docs": 0,
+          "total_docs": 0,
+          "total_size_in_bytes": 0,
+          "current_size_in_bytes": 0
+        },
+        "refresh": {
+          "total": 0,
+          "total_time_in_millis": 0
+        }
+      },
+      "graph_query_errors": 0,
+      "indexing_from_model_degraded": false,
+      "graph_index_errors": 0,
+      "training_requests": 0,
+      "script_compilation_errors": 0
+    },
+    "FeKre5NZR62zCQ1j3aFcBA": {
+      "remote_vector_index_build_stats": {
+        "repository_stats": {
+          "successful_read_time_in_millis": 0,
+          "write_success_count": 0,
+          "write_failure_count": 0,
+          "successful_write_time_in_millis": 0,
+          "read_success_count": 0,
+          "read_failure_count": 0
+        },
+        "build_stats": {
+          "remote_index_build_flush_time_in_millis": 0,
+          "remote_index_build_current_merge_size": 0,
+          "remote_index_build_current_merge_operations": 0,
+          "remote_index_build_current_flush_operations": 0,
+          "remote_index_build_current_flush_size": 0,
+          "remote_index_build_merge_time_in_millis": 0
+        },
+        "client_stats": {
+          "status_request_failure_count": 0,
+          "status_request_success_count": 0,
+          "index_build_success_count": 0,
+          "index_build_failure_count": 0,
+          "build_request_failure_count": 0,
+          "build_request_success_count": 0,
+          "waiting_time_in_ms": 0
+        }
+      },
+      "max_distance_query_with_filter_requests": 1027,
+      "graph_memory_usage_percentage": 0.30008718,
+      "graph_query_requests": 67,
+      "graph_memory_usage": 12000,
+      "cache_capacity_reached": false,
+      "load_success_count": 18,
+      "training_memory_usage": 0,
+      "indices_in_cache": {
+        "test_20250630_01_catalog_en": {
+          "graph_memory_usage": 12000,
+          "graph_memory_usage_percentage": 0.30008718,
+          "graph_count": 2
+        }
+      },
+      "script_query_errors": 0,
+      "hit_count": 49,
+      "knn_query_requests": 32,
+      "total_load_time": 22943784,
+      "miss_count": 18,
+      "min_score_query_requests": 0,
+      "knn_query_with_filter_requests": 0,
+      "training_memory_usage_percentage": 0.0,
+      "max_distance_query_requests": 1027,
+      "lucene_initialized": false,
+      "graph_index_requests": 0,
+      "faiss_initialized": true,
+      "load_exception_count": 0,
+      "training_errors": 0,
+      "min_score_query_with_filter_requests": 0,
+      "eviction_count": 0,
+      "nmslib_initialized": false,
+      "script_compilations": 0,
+      "script_query_requests": 0,
+      "graph_stats": {
+        "refresh": {
+          "total_time_in_millis": 978,
+          "total": 143
+        },
+        "merge": {
+          "current": 0,
+          "total": 12,
+          "total_time_in_millis": 1644,
+          "current_docs": 0,
+          "total_docs": 13546,
+          "total_size_in_bytes": 36864,
+          "current_size_in_bytes": 0
+        }
+      },
+      "graph_query_errors": 0,
+      "indexing_from_model_degraded": false,
+      "graph_index_errors": 0,
+      "training_requests": 0,
+      "script_compilation_errors": 0
+    },
+    "WdsBQTLkSHKicg6xxQ3OYg": {
+      "remote_vector_index_build_stats": {
+        "repository_stats": {
+          "successful_read_time_in_millis": 0,
+          "write_success_count": 0,
+          "write_failure_count": 0,
+          "successful_write_time_in_millis": 0,
+          "read_success_count": 0,
+          "read_failure_count": 0
+        },
+        "build_stats": {
+          "remote_index_build_flush_time_in_millis": 0,
+          "remote_index_build_current_merge_size": 0,
+          "remote_index_build_current_merge_operations": 0,
+          "remote_index_build_current_flush_operations": 0,
+          "remote_index_build_current_flush_size": 0,
+          "remote_index_build_merge_time_in_millis": 0
+        },
+        "client_stats": {
+          "status_request_failure_count": 0,
+          "status_request_success_count": 0,
+          "index_build_success_count": 0,
+          "index_build_failure_count": 0,
+          "build_request_failure_count": 0,
+          "build_request_success_count": 0,
+          "waiting_time_in_ms": 0
+        }
+      },
+      "max_distance_query_with_filter_requests": 898,
+      "graph_memory_usage_percentage": 0.1424914,
+      "graph_query_requests": 76,
+      "graph_memory_usage": 5698,
+      "cache_capacity_reached": false,
+      "load_success_count": 15,
+      "training_memory_usage": 0,
+      "indices_in_cache": {
+        "test_20250630_01_catalog_en": {
+          "graph_memory_usage": 5698,
+          "graph_memory_usage_percentage": 0.1424914,
+          "graph_count": 1
+        }
+      },
+      "script_query_errors": 0,
+      "hit_count": 61,
+      "knn_query_requests": 34,
+      "total_load_time": 34347647,
+      "miss_count": 15,
+      "min_score_query_requests": 0,
+      "knn_query_with_filter_requests": 0,
+      "training_memory_usage_percentage": 0.0,
+      "max_distance_query_requests": 898,
+      "lucene_initialized": false,
+      "graph_index_requests": 0,
+      "faiss_initialized": true,
+      "load_exception_count": 0,
+      "training_errors": 0,
+      "min_score_query_with_filter_requests": 0,
+      "eviction_count": 0,
+      "nmslib_initialized": false,
+      "script_compilations": 0,
+      "script_query_requests": 0,
+      "graph_stats": {
+        "refresh": {
+          "total_time_in_millis": 951,
+          "total": 164
+        },
+        "merge": {
+          "current": 0,
+          "total": 15,
+          "total_time_in_millis": 1830,
+          "current_docs": 0,
+          "total_docs": 15469,
+          "total_size_in_bytes": 46080,
+          "current_size_in_bytes": 0
+        }
+      },
+      "graph_query_errors": 0,
+      "indexing_from_model_degraded": false,
+      "graph_index_errors": 0,
+      "training_requests": 0,
+      "script_compilation_errors": 0
+    }
+  }
+}

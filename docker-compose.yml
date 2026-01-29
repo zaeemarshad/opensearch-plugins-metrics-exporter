@@ -1,0 +1,52 @@
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.4.0
+    container_name: opensearch-test
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - DISABLE_SECURITY_PLUGIN=true
+      - plugins.neural_search.stats_enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - opensearch-net
+
+  exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opensearch-exporter
+    environment:
+      - OPENSEARCH_URL=http://opensearch:9200
+      - ENABLE_KNN=true
+      - ENABLE_NEURAL=true
+      - LOG_LEVEL=debug
+    ports:
+      - "9206:9206"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - opensearch-net
+
+networks:
+  opensearch-net:
+    driver: bridge

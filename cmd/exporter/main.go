@@ -38,8 +38,6 @@ func main() {
 }
 
 func newRootCmd() *cobra.Command {
-	var cfgFile string
-
 	cmd := &cobra.Command{
 		Use:   "opensearch-plugins-metrics-exporter",
 		Short: "Prometheus exporter for OpenSearch plugin metrics",
@@ -75,7 +73,6 @@ Environment variables:
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&cfgFile, "config", "", "config file path")
 	flags.String("url", "http://localhost:9200", "OpenSearch URL")
 	flags.String("username", "", "OpenSearch username")
 	flags.String("password", "", "OpenSearch password")
@@ -107,13 +104,15 @@ Environment variables:
 	_ = viper.BindPFlag("metrics_path", flags.Lookup("metrics-path"))
 	_ = viper.BindPFlag("enable_knn", flags.Lookup("enable-knn"))
 	_ = viper.BindPFlag("enable_neural", flags.Lookup("enable-neural"))
+	_ = viper.BindPFlag("log_level", flags.Lookup("log-level"))
+	_ = viper.BindPFlag("log_format", flags.Lookup("log-format"))
 
 	return cmd
 }
 
 func run(ctx context.Context) error {
-	logLevel := viper.GetString("log-level")
-	logFormat := viper.GetString("log-format")
+	logLevel := viper.GetString("log_level")
+	logFormat := viper.GetString("log_format")
 	logger := setupLogger(logLevel, logFormat)
 
 	logger.Info("starting OpenSearch plugins metrics exporter",

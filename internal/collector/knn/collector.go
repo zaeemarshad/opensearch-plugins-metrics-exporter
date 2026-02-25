@@ -6,6 +6,7 @@ package knn
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
@@ -642,7 +643,7 @@ func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
 
 	var stats StatsResponse
 	if err := json.Unmarshal(body, &stats); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal k-NN stats response: %w", err)
 	}
 
 	return &stats, nil

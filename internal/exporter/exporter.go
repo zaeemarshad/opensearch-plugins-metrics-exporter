@@ -6,6 +6,7 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"html"
 	"log/slog"
 	"net/http"
 	"time"
@@ -68,16 +69,16 @@ func New(cfg Config, collectors []prometheus.Collector, logger *slog.Logger) (*S
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(`<!DOCTYPE html>
+		_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head><title>OpenSearch Plugins Metrics Exporter</title></head>
 <body>
 <h1>OpenSearch Plugins Metrics Exporter</h1>
-<p><a href="` + metricsPath + `">Metrics</a></p>
+<p><a href="%s">Metrics</a></p>
 <p><a href="/health">Health</a></p>
 <p><a href="/ready">Ready</a></p>
 </body>
-</html>`))
+</html>`, html.EscapeString(metricsPath))
 	})
 
 	httpServer := &http.Server{

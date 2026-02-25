@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates
@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     ./cmd/exporter
 
 # Final stage
-FROM alpine:3.19
+FROM alpine:3.21
 
 # Install CA certificates for HTTPS connections
 RUN apk add --no-cache ca-certificates

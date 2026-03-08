@@ -61,9 +61,11 @@ func Load() (*Config, error) {
 		cfg.OpenSearchPassword = password
 	}
 	if timeout := os.Getenv("OPENSEARCH_TIMEOUT"); timeout != "" {
-		if d, err := time.ParseDuration(timeout); err == nil {
-			cfg.OpenSearchTimeout = d
+		d, err := time.ParseDuration(timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid OPENSEARCH_TIMEOUT %q: %w", timeout, err)
 		}
+		cfg.OpenSearchTimeout = d
 	}
 	if insecure := os.Getenv("OPENSEARCH_TLS_INSECURE"); insecure != "" {
 		cfg.TLSInsecure = insecure == "true" || insecure == "1" || insecure == "yes"
@@ -78,19 +80,25 @@ func Load() (*Config, error) {
 		cfg.TLSClientKey = clientKey
 	}
 	if retryCount := os.Getenv("OPENSEARCH_RETRY_COUNT"); retryCount != "" {
-		if n, err := strconv.Atoi(retryCount); err == nil {
-			cfg.RetryCount = n
+		n, err := strconv.Atoi(retryCount)
+		if err != nil {
+			return nil, fmt.Errorf("invalid OPENSEARCH_RETRY_COUNT %q: %w", retryCount, err)
 		}
+		cfg.RetryCount = n
 	}
 	if retryDelay := os.Getenv("OPENSEARCH_RETRY_DELAY"); retryDelay != "" {
-		if d, err := time.ParseDuration(retryDelay); err == nil {
-			cfg.RetryDelay = d
+		d, err := time.ParseDuration(retryDelay)
+		if err != nil {
+			return nil, fmt.Errorf("invalid OPENSEARCH_RETRY_DELAY %q: %w", retryDelay, err)
 		}
+		cfg.RetryDelay = d
 	}
 	if port := os.Getenv("EXPORTER_PORT"); port != "" {
-		if n, err := strconv.Atoi(port); err == nil {
-			cfg.ExporterPort = n
+		n, err := strconv.Atoi(port)
+		if err != nil {
+			return nil, fmt.Errorf("invalid EXPORTER_PORT %q: %w", port, err)
 		}
+		cfg.ExporterPort = n
 	}
 	if metricsPath := os.Getenv("METRICS_PATH"); metricsPath != "" {
 		cfg.MetricsPath = metricsPath

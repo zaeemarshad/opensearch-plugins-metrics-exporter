@@ -8,6 +8,7 @@ package neural
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -596,7 +597,7 @@ func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
 
 	var stats StatsResponse
 	if err := json.Unmarshal(body, &stats); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal neural stats response: %w", err)
 	}
 
 	return &stats, nil

@@ -101,7 +101,6 @@ func (c *Client) doRequest(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
 
 	if c.username != "" && c.password != "" {
 		req.SetBasicAuth(c.username, c.password)

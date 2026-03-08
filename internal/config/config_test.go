@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -261,6 +262,63 @@ func TestValidate(t *testing.T) {
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestLoadInvalidEnvVars(t *testing.T) {
+	tests := []struct {
+		name    string
+		envKey  string
+		envVal  string
+		errMust string
+	}{
+		{
+			name:    "invalid OPENSEARCH_TIMEOUT",
+			envKey:  "OPENSEARCH_TIMEOUT",
+			envVal:  "notaduration",
+			errMust: "invalid OPENSEARCH_TIMEOUT",
+		},
+		{
+			name:    "invalid OPENSEARCH_RETRY_COUNT",
+			envKey:  "OPENSEARCH_RETRY_COUNT",
+			envVal:  "notanint",
+			errMust: "invalid OPENSEARCH_RETRY_COUNT",
+		},
+		{
+			name:    "invalid OPENSEARCH_RETRY_DELAY",
+			envKey:  "OPENSEARCH_RETRY_DELAY",
+			envVal:  "notaduration",
+			errMust: "invalid OPENSEARCH_RETRY_DELAY",
+		},
+		{
+			name:    "invalid EXPORTER_PORT",
+			envKey:  "EXPORTER_PORT",
+			envVal:  "notanint",
+			errMust: "invalid EXPORTER_PORT",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			saved := os.Getenv(tt.envKey)
+			defer func() {
+				if saved == "" {
+					os.Unsetenv(tt.envKey)
+				} else {
+					os.Setenv(tt.envKey, saved)
+				}
+			}()
+
+			os.Setenv(tt.envKey, tt.envVal)
+
+			_, err := Load()
+			if err == nil {
+				t.Fatalf("expected error for invalid %s=%q, got nil", tt.envKey, tt.envVal)
+			}
+			if !strings.Contains(err.Error(), tt.errMust) {
+				t.Errorf("expected error to contain %q, got %q", tt.errMust, err.Error())
 			}
 		})
 	}

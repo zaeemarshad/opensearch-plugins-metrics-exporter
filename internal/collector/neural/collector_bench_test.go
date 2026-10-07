@@ -5,17 +5,24 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 // mockClient implements client.HTTPClient for benchmarking.
+// It answers the local node lookup and returns response for every other path.
 type mockClient struct {
 	response []byte
+	paths    []string
 }
 
-func (m *mockClient) Get(_ context.Context, _ string) ([]byte, error) {
+func (m *mockClient) Get(_ context.Context, path string) ([]byte, error) {
+	m.paths = append(m.paths, path)
+	if strings.HasPrefix(path, "/_nodes/_local") {
+		return testLocalNodeResponse, nil
+	}
 	return m.response, nil
 }
 

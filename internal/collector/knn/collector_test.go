@@ -109,7 +109,7 @@ func TestCollectorCollect(t *testing.T) {
 
 	// Create test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/_plugins/_knn/stats" {
+		if r.URL.Path != "/_plugins/_knn/_local/stats" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 			http.NotFound(w, r)
 			return

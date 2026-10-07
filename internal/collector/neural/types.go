@@ -1,7 +1,7 @@
 package neural
 
 // StatsResponse represents the Neural Search stats API response.
-// Endpoint: GET /_plugins/_neural/stats
+// Endpoint: GET /_plugins/_neural/{nodeId}/stats
 // Note: Stats collection must be enabled via cluster setting:
 // PUT /_cluster/settings {"persistent":{"plugins.neural_search.stats_enabled":true}}
 type StatsResponse struct {
@@ -21,6 +21,19 @@ type NodesInfo struct {
 type InfoStats struct {
 	ClusterVersion string          `json:"cluster_version"`
 	Processors     ProcessorCounts `json:"processors"`
+	// Added in 3.9; nil on earlier versions.
+	Index *IndexInfo `json:"index"`
+}
+
+type IndexInfo struct {
+	Sparse SparseIndexInfo `json:"sparse"`
+}
+
+type SparseIndexInfo struct {
+	SparseVectorIndices       int64 `json:"sparse_vector_indices"`
+	SparseVectorFields        int64 `json:"sparse_vector_fields"`
+	SparseNativeEngineIndices int64 `json:"sparse_native_engine_indices"`
+	SparseNativeEngineFields  int64 `json:"sparse_native_engine_fields"`
 }
 
 type ProcessorCounts struct {

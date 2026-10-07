@@ -24,3 +24,34 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: latest
+
+  integration:
+    name: integration (OpenSearch ${{ matrix.opensearch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        opensearch: [ "3.8.0", "3.9.0" ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Start OpenSearch
+        run: docker compose up -d --wait opensearch
+        env:
+          OPENSEARCH_VERSION: ${{ matrix.opensearch }}
+
+      - name: Integration tests
+        run: go test -tags=integration -v ./internal/integration/...
+
+      - name: OpenSearch logs
+        if: failure()
+        run: docker compose logs opensearch
+
+      - name: Stop OpenSearch
+        if: always()
+        run: docker compose down

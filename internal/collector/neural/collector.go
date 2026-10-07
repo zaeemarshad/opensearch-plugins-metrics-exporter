@@ -1,5 +1,5 @@
 // Package neural provides a Prometheus collector for OpenSearch Neural Search plugin metrics.
-// It fetches statistics from the /_plugins/_neural/stats API endpoint and exposes
+// It fetches statistics for the local node from the /_plugins/_neural/{nodeId}/stats API endpoint and exposes
 // them as Prometheus metrics with the opensearch_neural_ prefix.
 // Note: Neural Search stats must be enabled via cluster setting:
 // PUT /_cluster/settings {"persistent":{"plugins.neural_search.stats_enabled":true}}
@@ -64,6 +64,12 @@ type Collector struct {
 	infoCombHarmonicProcessors           *prometheus.Desc
 	infoRankBasedNormalizationProcessors *prometheus.Desc
 	infoCombRRFProcessors                *prometheus.Desc
+
+	// Info: Sparse index counts (3.9+)
+	infoSparseVectorIndices       *prometheus.Desc
+	infoSparseVectorFields        *prometheus.Desc
+	infoSparseNativeEngineIndices *prometheus.Desc
+	infoSparseNativeEngineFields  *prometheus.Desc
 
 	// Query metrics
 	hybridQueryRequests               *prometheus.Desc
@@ -219,6 +225,28 @@ func NewCollector(c client.HTTPClient, logger *slog.Logger) *Collector {
 		infoNeuralQueryEnricherProcessors: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "info_neural_query_enricher_processors"),
 			"Number of neural_query_enricher processors",
+			clusterLabels, nil,
+		),
+
+		// Info: Sparse index counts (3.9+)
+		infoSparseVectorIndices: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "info_sparse_vector_indices"),
+			"Number of indices with sparse_vector fields (OpenSearch 3.9+)",
+			clusterLabels, nil,
+		),
+		infoSparseVectorFields: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "info_sparse_vector_fields"),
+			"Number of sparse_vector fields (OpenSearch 3.9+)",
+			clusterLabels, nil,
+		),
+		infoSparseNativeEngineIndices: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "info_sparse_native_engine_indices"),
+			"Number of indices using the sparse native engine (OpenSearch 3.9+)",
+			clusterLabels, nil,
+		),
+		infoSparseNativeEngineFields: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "info_sparse_native_engine_fields"),
+			"Number of fields using the sparse native engine (OpenSearch 3.9+)",
 			clusterLabels, nil,
 		),
 
@@ -488,6 +516,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.nodesFailed
 
 	// Info metrics
+	ch <- c.infoSparseVectorIndices
+	ch <- c.infoSparseVectorFields
+	ch <- c.infoSparseNativeEngineIndices
+	ch <- c.infoSparseNativeEngineFields
 	ch <- c.infoSparseEncodingProcessors
 	ch <- c.infoSkipExistingProcessors
 	ch <- c.infoTextImageEmbeddingProcessors
@@ -590,7 +622,12 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
-	body, err := c.client.Get(ctx, "/_plugins/_neural/stats")
+	nodeID, err := c.localNodeID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.client.Get(ctx, "/_plugins/_neural/"+nodeID+"/stats")
 	if err != nil {
 		return nil, err
 	}
@@ -601,6 +638,29 @@ func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
 	}
 
 	return &stats, nil
+}
+
+// localNodeID returns the ID of the node the client is connected to.
+// The neural stats API accepts only 22-character node IDs and ignores _local.
+func (c *Collector) localNodeID(ctx context.Context) (string, error) {
+	body, err := c.client.Get(ctx, "/_nodes/_local?filter_path=nodes.*.name")
+	if err != nil {
+		return "", err
+	}
+
+	var resp struct {
+		Nodes map[string]json.RawMessage `json:"nodes"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return "", fmt.Errorf("failed to unmarshal local node response: %w", err)
+	}
+	if len(resp.Nodes) != 1 {
+		return "", fmt.Errorf("expected 1 local node, got %d", len(resp.Nodes))
+	}
+	for id := range resp.Nodes {
+		return id, nil
+	}
+	return "", nil
 }
 
 func (c *Collector) collectClusterMetrics(ch chan<- prometheus.Metric, stats *StatsResponse) {
@@ -639,6 +699,14 @@ func (c *Collector) collectClusterMetrics(ch chan<- prometheus.Metric, stats *St
 	ch <- prometheus.MustNewConstMetric(c.infoCombHarmonicProcessors, prometheus.GaugeValue, float64(hybrid.CombHarmonicProcessors), cluster)
 	ch <- prometheus.MustNewConstMetric(c.infoRankBasedNormalizationProcessors, prometheus.GaugeValue, float64(hybrid.RankBasedNormalizationProcessors), cluster)
 	ch <- prometheus.MustNewConstMetric(c.infoCombRRFProcessors, prometheus.GaugeValue, float64(hybrid.CombRRFProcessors), cluster)
+
+	// Info: Sparse index counts (3.9+)
+	if idx := stats.Info.Index; idx != nil {
+		ch <- prometheus.MustNewConstMetric(c.infoSparseVectorIndices, prometheus.GaugeValue, float64(idx.Sparse.SparseVectorIndices), cluster)
+		ch <- prometheus.MustNewConstMetric(c.infoSparseVectorFields, prometheus.GaugeValue, float64(idx.Sparse.SparseVectorFields), cluster)
+		ch <- prometheus.MustNewConstMetric(c.infoSparseNativeEngineIndices, prometheus.GaugeValue, float64(idx.Sparse.SparseNativeEngineIndices), cluster)
+		ch <- prometheus.MustNewConstMetric(c.infoSparseNativeEngineFields, prometheus.GaugeValue, float64(idx.Sparse.SparseNativeEngineFields), cluster)
+	}
 }
 
 func (c *Collector) collectNodeMetrics(ch chan<- prometheus.Metric, stats *StatsResponse) {

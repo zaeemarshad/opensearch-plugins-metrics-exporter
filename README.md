@@ -4,8 +4,21 @@ A Prometheus exporter for OpenSearch plugin metrics. This exporter collects metr
 
 ## Supported Plugins
 
-- **k-NN (Vector Search)** - `/_plugins/_knn/stats`
-- **Neural Search (Semantic/Hybrid Search)** - `/_plugins/_neural/stats`
+- **k-NN (Vector Search)** - `/_plugins/_knn/_local/stats`
+- **Neural Search (Semantic/Hybrid Search)** - `/_plugins/_neural/{nodeId}/stats`
+
+## Supported Core Metrics
+
+- **Search Backpressure** - `/_nodes/_local/stats/search_backpressure`
+
+## Node Scope
+
+Every query returns stats for the node at `OPENSEARCH_URL` only. Run one exporter per node, with `OPENSEARCH_URL` set to that node.
+
+- k-NN and search backpressure use the `_local` node filter.
+- The neural stats API ignores `_local`. The exporter gets the local node ID from `/_nodes/_local` on each scrape and queries by that ID.
+- Cluster-level metrics are the same on every node, e.g. `opensearch_knn_circuit_breaker_triggered`, `opensearch_knn_model_index_status` and `opensearch_neural_info_*`. Aggregate them with `max by (cluster)`, not `sum`.
+- Tested against OpenSearch 3.8.0 and 3.9.0.
 
 ## Features
 
@@ -80,6 +93,7 @@ Configuration can be provided via environment variables or CLI flags.
 | `METRICS_PATH` | Metrics endpoint path | `/metrics` |
 | `ENABLE_KNN` | Enable k-NN plugin metrics | `true` |
 | `ENABLE_NEURAL` | Enable Neural Search plugin metrics | `true` |
+| `ENABLE_SEARCH_BACKPRESSURE` | Enable search backpressure metrics | `true` |
 
 ### CLI Flags
 
@@ -100,6 +114,7 @@ Configuration can be provided via environment variables or CLI flags.
 --log-format string      Log format: text, json (default "text")
 --enable-knn             Enable k-NN plugin metrics (default true)
 --enable-neural          Enable Neural Search plugin metrics (default true)
+--enable-search-backpressure  Enable search backpressure metrics (default true)
 ```
 
 ## Endpoints
@@ -129,6 +144,7 @@ Configuration can be provided via environment variables or CLI flags.
 - Engine: `faiss_initialized`, `nmslib_initialized`, `lucene_initialized`
 - Graph stats: merge and refresh operation metrics
 - Remote build stats: repository, client, and build metrics
+- Remote build exceptions (OpenSearch 3.9+): `remote_build_client_merge_abort_exceptions_total`, `remote_build_client_terminal_exceptions_total`
 
 #### Index-Level Metrics (labels: cluster, node, index)
 - `indices_in_cache_graph_count`, `indices_in_cache_memory_bytes`
@@ -144,6 +160,11 @@ Processor counts configured in pipelines:
 - Ingest: `info_text_embedding_processors_in_pipelines`, `info_sparse_encoding_processors`, `info_text_chunking_processors`
 - Search: `info_rerank_ml_processors`, `info_neural_query_enricher_processors`
 - Hybrid: `info_normalization_processors`, `info_comb_rrf_processors`, `info_norm_*_processors`
+
+Sparse index counts (OpenSearch 3.9+):
+- `info_sparse_vector_indices`, `info_sparse_vector_fields`, `info_sparse_native_engine_indices`, `info_sparse_native_engine_fields`
+
+Metrics marked 3.9+ are emitted only when OpenSearch reports them. On 3.8 the exporter emits no series for them.
 
 #### Node-Level Metrics (labels: cluster, node)
 
@@ -163,6 +184,31 @@ Processor counts configured in pipelines:
 
 **Semantic Highlighting:**
 - `semantic_highlighting_requests_total`, `semantic_highlighting_batch_requests_total`
+
+### Search Backpressure Metrics (`opensearch_search_backpressure_*`)
+
+#### Meta Metrics
+- `opensearch_search_backpressure_up` - Whether the last scrape was successful (0=failed, 1=success)
+- `opensearch_search_backpressure_scrape_duration_seconds` - Duration of the last scrape
+- `nodes_total`, `nodes_successful`, `nodes_failed`
+
+#### Node-Level Metrics
+
+**Mode (labels: cluster, node, mode):**
+- `mode` - 1 for the active mode (`disabled`, `monitor_only` or `enforced`), 0 for the other modes
+
+**Task Metrics (labels: cluster, node, task_type):**
+- `task_type` is `search_task` or `search_shard_task`
+- `task_completions_total`, `task_cancellations_total`, `task_cancellation_limit_reached_total`
+
+**Resource Tracker Metrics (labels: cluster, node, task_type, tracker):**
+- `tracker` is `heap_usage`, `cpu_usage`, `elapsed_time` or `native_memory_usage`
+- `tracker_cancellations_total` - all trackers
+- `tracker_current_max_bytes`, `tracker_current_avg_bytes` - `heap_usage` and `native_memory_usage`
+- `tracker_rolling_avg_bytes` - `heap_usage`
+- `tracker_current_max_milliseconds`, `tracker_current_avg_milliseconds` - `cpu_usage` and `elapsed_time`
+
+OpenSearch reports a disabled tracker as `null` or omits it. The exporter emits no series for that tracker.
 
 ## Prometheus Configuration
 
@@ -198,7 +244,7 @@ go test ./...
 
 ### Integration Tests
 
-Run integration tests against a real OpenSearch 3.4.0 instance:
+Run integration tests against a real OpenSearch instance. The default image is 3.9.0. CI runs the tests against 3.8.0 and 3.9.0. Set `OPENSEARCH_VERSION` to select another release, e.g. `OPENSEARCH_VERSION=3.8.0 docker compose up -d opensearch`.
 
 ```bash
 # Start OpenSearch

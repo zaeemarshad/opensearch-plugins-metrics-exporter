@@ -39,6 +39,30 @@ func loadTestData(t *testing.T) []byte {
 	return data
 }
 
+const testLocalNodeID = "Z7eXl9nKRnmJP1GG22lqng"
+
+var testLocalNodeResponse = []byte(`{"nodes":{"` + testLocalNodeID + `":{"name":"test-node"}}}`)
+
+// statsHandler serves the local node lookup and the neural stats for that node only.
+func statsHandler(t *testing.T, stats []byte) http.Handler {
+	t.Helper()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/_nodes/_local":
+			if r.URL.Query().Get("filter_path") != "nodes.*.name" {
+				t.Errorf("unexpected filter_path: %s", r.URL.RawQuery)
+			}
+			w.Write(testLocalNodeResponse)
+		case "/_plugins/_neural/" + testLocalNodeID + "/stats":
+			w.Write(stats)
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+}
+
 func TestStatsResponseParsing(t *testing.T) {
 	data := loadTestData(t)
 
@@ -120,16 +144,7 @@ func TestStatsResponseParsing(t *testing.T) {
 func TestCollectorCollect(t *testing.T) {
 	testData := loadTestData(t)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/_plugins/_neural/stats" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(testData)
-	}))
+	server := httptest.NewServer(statsHandler(t, testData))
 	defer server.Close()
 
 	cfg := &config.Config{
@@ -272,11 +287,7 @@ func TestMemoryConversion(t *testing.T) {
 	// Verify KB to bytes conversion
 	testData := loadTestData(t)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(testData)
-	}))
+	server := httptest.NewServer(statsHandler(t, testData))
 	defer server.Close()
 
 	cfg := &config.Config{
@@ -330,11 +341,7 @@ func TestCollectorWithEmptyResponse(t *testing.T) {
 		"nodes": {}
 	}`
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(emptyResponse))
-	}))
+	server := httptest.NewServer(statsHandler(t, []byte(emptyResponse)))
 	defer server.Close()
 
 	cfg := &config.Config{
@@ -361,5 +368,54 @@ func TestCollectorWithEmptyResponse(t *testing.T) {
 	_, err = registry.Gather()
 	if err != nil {
 		t.Fatalf("failed to gather metrics with empty response: %v", err)
+	}
+}
+
+// The neural stats API ignores _local, so the collector must query by the resolved node ID
+// to keep every scrape off the other nodes in the cluster.
+func TestStatsAreScopedToLocalNode(t *testing.T) {
+	mock := &mockClient{response: loadTestData(t)}
+	collector := NewCollector(mock, nil)
+
+	ch := make(chan prometheus.Metric, 200)
+	collector.Collect(ch)
+	close(ch)
+
+	want := []string{"/_nodes/_local?filter_path=nodes.*.name", "/_plugins/_neural/" + testLocalNodeID + "/stats"}
+	if strings.Join(mock.paths, " ") != strings.Join(want, " ") {
+		t.Errorf("expected requests %v, got %v", want, mock.paths)
+	}
+}
+
+func TestUpIsZeroWhenLocalNodeUnresolved(t *testing.T) {
+	for name, body := range map[string]string{
+		"no nodes":       `{"nodes":{}}`,
+		"multiple nodes": `{"nodes":{"a":{},"b":{}}}`,
+		"invalid json":   `not json`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/_nodes/_local" {
+					t.Errorf("stats must not be requested without a local node ID, got %s", r.URL.Path)
+				}
+				w.Write([]byte(body))
+			}))
+			defer server.Close()
+
+			osClient, err := client.New(&config.Config{OpenSearchURL: server.URL, OpenSearchTimeout: time.Second}, nil)
+			if err != nil {
+				t.Fatalf("failed to create client: %v", err)
+			}
+			defer osClient.Close()
+
+			ch := make(chan prometheus.Metric, 10)
+			NewCollector(osClient, nil).Collect(ch)
+			close(ch)
+			for m := range ch {
+				if strings.Contains(m.Desc().String(), "opensearch_neural_up") && getMetricValue(m) != 0 {
+					t.Errorf("expected up 0, got %v", getMetricValue(m))
+				}
+			}
+		})
 	}
 }

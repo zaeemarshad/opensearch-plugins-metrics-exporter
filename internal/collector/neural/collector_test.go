@@ -419,3 +419,44 @@ func TestUpIsZeroWhenLocalNodeUnresolved(t *testing.T) {
 		})
 	}
 }
+
+// Each agentic, seismic and MMR field has a distinct value, so a field wired to the wrong metric fails.
+func TestAgenticSeismicMMRMetrics(t *testing.T) {
+	body := []byte(`{
+		"cluster_name": "c",
+		"info": {"processors": {"search": {"agentic": {"agentic_context_processors": 1, "agentic_query_translator_processors": 2}}}},
+		"nodes": {"n1": {
+			"query": {"agentic": {"agentic_query_requests": 3}},
+			"processors": {
+				"search": {"mmr_neural_query_transformer_executions": 4, "agentic": {"agentic_query_translator_executions": 5, "agentic_context_executions": 6}},
+				"ingest": {"sparse_encoding_seismic_executions": 7}
+			}
+		}}
+	}`)
+
+	ch := make(chan prometheus.Metric, 200)
+	NewCollector(&mockClient{response: body}, nil).Collect(ch)
+	close(ch)
+
+	got := make(map[string]float64)
+	for m := range ch {
+		desc := m.Desc().String()
+		start := strings.Index(desc, `fqName: "`) + len(`fqName: "`)
+		got[desc[start:start+strings.Index(desc[start:], `"`)]] = getMetricValue(m)
+	}
+
+	want := map[string]float64{
+		"opensearch_neural_info_agentic_context_processors":               1,
+		"opensearch_neural_info_agentic_query_translator_processors":      2,
+		"opensearch_neural_agentic_query_requests_total":                  3,
+		"opensearch_neural_mmr_neural_query_transformer_executions_total": 4,
+		"opensearch_neural_agentic_query_translator_executions_total":     5,
+		"opensearch_neural_agentic_context_executions_total":              6,
+		"opensearch_neural_sparse_encoding_seismic_executions_total":      7,
+	}
+	for name, v := range want {
+		if got[name] != v {
+			t.Errorf("%s: expected %v, got %v", name, v, got[name])
+		}
+	}
+}

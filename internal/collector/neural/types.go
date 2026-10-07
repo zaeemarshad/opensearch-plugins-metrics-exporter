@@ -42,11 +42,17 @@ type ProcessorCounts struct {
 }
 
 type SearchProcessorCounts struct {
-	Hybrid                         HybridProcessorCounts `json:"hybrid"`
-	RerankMLProcessors             int64                 `json:"rerank_ml_processors"`
-	RerankByFieldProcessors        int64                 `json:"rerank_by_field_processors"`
-	NeuralSparseTwoPhaseProcessors int64                 `json:"neural_sparse_two_phase_processors"`
-	NeuralQueryEnricherProcessors  int64                 `json:"neural_query_enricher_processors"`
+	Hybrid                         HybridProcessorCounts  `json:"hybrid"`
+	RerankMLProcessors             int64                  `json:"rerank_ml_processors"`
+	RerankByFieldProcessors        int64                  `json:"rerank_by_field_processors"`
+	NeuralSparseTwoPhaseProcessors int64                  `json:"neural_sparse_two_phase_processors"`
+	NeuralQueryEnricherProcessors  int64                  `json:"neural_query_enricher_processors"`
+	Agentic                        AgenticProcessorCounts `json:"agentic"`
+}
+
+type AgenticProcessorCounts struct {
+	AgenticContextProcessors         int64 `json:"agentic_context_processors"`
+	AgenticQueryTranslatorProcessors int64 `json:"agentic_query_translator_processors"`
 }
 
 type HybridProcessorCounts struct {
@@ -83,6 +89,11 @@ type QueryStats struct {
 	Hybrid       HybridQueryStats       `json:"hybrid"`
 	Neural       NeuralQueryStats       `json:"neural"`
 	NeuralSparse NeuralSparseQueryStats `json:"neural_sparse"`
+	Agentic      AgenticQueryStats      `json:"agentic"`
+}
+
+type AgenticQueryStats struct {
+	AgenticQueryRequests int64 `json:"agentic_query_requests"`
 }
 
 type HybridQueryStats struct {
@@ -115,11 +126,18 @@ type ProcessorExecutions struct {
 }
 
 type SearchProcessorExecutions struct {
-	NeuralSparseTwoPhaseExecutions int64                     `json:"neural_sparse_two_phase_executions"`
-	Hybrid                         HybridProcessorExecutions `json:"hybrid"`
-	RerankByFieldExecutions        int64                     `json:"rerank_by_field_executions"`
-	NeuralQueryEnricherExecutions  int64                     `json:"neural_query_enricher_executions"`
-	RerankMLExecutions             int64                     `json:"rerank_ml_executions"`
+	NeuralSparseTwoPhaseExecutions      int64                      `json:"neural_sparse_two_phase_executions"`
+	Hybrid                              HybridProcessorExecutions  `json:"hybrid"`
+	RerankByFieldExecutions             int64                      `json:"rerank_by_field_executions"`
+	NeuralQueryEnricherExecutions       int64                      `json:"neural_query_enricher_executions"`
+	RerankMLExecutions                  int64                      `json:"rerank_ml_executions"`
+	MMRNeuralQueryTransformerExecutions int64                      `json:"mmr_neural_query_transformer_executions"`
+	Agentic                             AgenticProcessorExecutions `json:"agentic"`
+}
+
+type AgenticProcessorExecutions struct {
+	AgenticQueryTranslatorExecutions int64 `json:"agentic_query_translator_executions"`
+	AgenticContextExecutions         int64 `json:"agentic_context_executions"`
 }
 
 type HybridProcessorExecutions struct {
@@ -144,6 +162,7 @@ type IngestProcessorExecutions struct {
 	SemanticFieldExecutions                int64 `json:"semantic_field_executions"`
 	SemanticFieldChunkingExecutions        int64 `json:"semantic_field_chunking_executions"`
 	TextChunkingDelimiterExecutions        int64 `json:"text_chunking_delimiter_executions"`
+	SparseEncodingSeismicExecutions        int64 `json:"sparse_encoding_seismic_executions"`
 	TextImageEmbeddingExecutions           int64 `json:"text_image_embedding_executions"`
 }
 

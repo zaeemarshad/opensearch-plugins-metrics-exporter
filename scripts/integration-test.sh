@@ -56,7 +56,7 @@ pass "Cluster info retrieved"
 # Check k-NN plugin
 echo ""
 echo "3. Checking k-NN plugin..."
-KNN_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_knn/stats" 2>&1)
+KNN_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_knn/_local/stats" 2>&1)
 if echo "$KNN_STATS" | grep -q "cluster_name"; then
     pass "k-NN plugin is available"
 else
@@ -127,7 +127,7 @@ pass "k-NN query executed"
 # Verify k-NN stats are now available
 echo ""
 echo "6. Verifying k-NN stats..."
-KNN_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_knn/stats")
+KNN_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_knn/_local/stats")
 if echo "$KNN_STATS" | grep -q "knn_query_requests"; then
     KNN_QUERIES=$(echo "$KNN_STATS" | grep -o '"knn_query_requests":[0-9]*' | head -1 | cut -d':' -f2)
     info "k-NN queries recorded: $KNN_QUERIES"
@@ -151,7 +151,10 @@ pass "Neural Search stats enabled"
 # Check Neural Search stats
 echo ""
 echo "8. Checking Neural Search stats..."
-NEURAL_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_neural/stats" 2>&1)
+# The neural stats API ignores _local, so query by the local node ID.
+LOCAL_NODE_ID=$(curl -s "$OPENSEARCH_URL/_nodes/_local?filter_path=nodes.*.name" | grep -o '"nodes":{"[^"]*"' | cut -d'"' -f4)
+info "Local node ID: $LOCAL_NODE_ID"
+NEURAL_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_neural/$LOCAL_NODE_ID/stats" 2>&1)
 if echo "$NEURAL_STATS" | grep -q "cluster_name"; then
     pass "Neural Search stats are available"
 else

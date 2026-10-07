@@ -49,10 +49,12 @@ type Collector struct {
 	infoTextChunkingProcessors                 *prometheus.Desc
 
 	// Info: Search processor counts
-	infoRerankMLProcessors             *prometheus.Desc
-	infoRerankByFieldProcessors        *prometheus.Desc
-	infoNeuralSparseTwoPhaseProcessors *prometheus.Desc
-	infoNeuralQueryEnricherProcessors  *prometheus.Desc
+	infoRerankMLProcessors               *prometheus.Desc
+	infoRerankByFieldProcessors          *prometheus.Desc
+	infoNeuralSparseTwoPhaseProcessors   *prometheus.Desc
+	infoNeuralQueryEnricherProcessors    *prometheus.Desc
+	infoAgenticContextProcessors         *prometheus.Desc
+	infoAgenticQueryTranslatorProcessors *prometheus.Desc
 
 	// Info: Hybrid processor counts
 	infoNormalizationProcessors          *prometheus.Desc
@@ -84,16 +86,20 @@ type Collector struct {
 
 	neuralSparseQueryRequests *prometheus.Desc
 	seismicQueryRequests      *prometheus.Desc
+	agenticQueryRequests      *prometheus.Desc
 
 	// Semantic highlighting
 	semanticHighlightingRequestCount      *prometheus.Desc
 	semanticHighlightingBatchRequestCount *prometheus.Desc
 
 	// Search processor executions
-	neuralSparseTwoPhaseExecutions *prometheus.Desc
-	rerankByFieldExecutions        *prometheus.Desc
-	neuralQueryEnricherExecutions  *prometheus.Desc
-	rerankMLExecutions             *prometheus.Desc
+	neuralSparseTwoPhaseExecutions      *prometheus.Desc
+	rerankByFieldExecutions             *prometheus.Desc
+	neuralQueryEnricherExecutions       *prometheus.Desc
+	rerankMLExecutions                  *prometheus.Desc
+	mmrNeuralQueryTransformerExecutions *prometheus.Desc
+	agenticQueryTranslatorExecutions    *prometheus.Desc
+	agenticContextExecutions            *prometheus.Desc
 
 	// Hybrid processor executions
 	normalizationProcessorExecutions          *prometheus.Desc
@@ -117,6 +123,7 @@ type Collector struct {
 	semanticFieldChunkingExecutions        *prometheus.Desc
 	textChunkingDelimiterExecutions        *prometheus.Desc
 	textImageEmbeddingExecutions           *prometheus.Desc
+	sparseEncodingSeismicExecutions        *prometheus.Desc
 
 	// Memory
 	sparseMemoryUsageBytes      *prometheus.Desc
@@ -225,6 +232,16 @@ func NewCollector(c client.HTTPClient, logger *slog.Logger) *Collector {
 		infoNeuralQueryEnricherProcessors: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "info_neural_query_enricher_processors"),
 			"Number of neural_query_enricher processors",
+			clusterLabels, nil,
+		),
+		infoAgenticContextProcessors: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "info_agentic_context_processors"),
+			"Number of agentic context processors",
+			clusterLabels, nil,
+		),
+		infoAgenticQueryTranslatorProcessors: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "info_agentic_query_translator_processors"),
+			"Number of agentic query translator processors",
 			clusterLabels, nil,
 		),
 
@@ -350,6 +367,11 @@ func NewCollector(c client.HTTPClient, logger *slog.Logger) *Collector {
 			"Neural sparse ANN queries using SEISMIC algorithm",
 			nodeLabels, nil,
 		),
+		agenticQueryRequests: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "agentic_query_requests_total"),
+			"Total number of agentic query requests",
+			nodeLabels, nil,
+		),
 
 		// Semantic highlighting
 		semanticHighlightingRequestCount: prometheus.NewDesc(
@@ -382,6 +404,21 @@ func NewCollector(c client.HTTPClient, logger *slog.Logger) *Collector {
 		rerankMLExecutions: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "rerank_ml_executions_total"),
 			"rerank ml_opensearch processor executions",
+			nodeLabels, nil,
+		),
+		mmrNeuralQueryTransformerExecutions: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "mmr_neural_query_transformer_executions_total"),
+			"Total number of MMR neural query transformer executions",
+			nodeLabels, nil,
+		),
+		agenticQueryTranslatorExecutions: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "agentic_query_translator_executions_total"),
+			"Total number of agentic query translator executions",
+			nodeLabels, nil,
+		),
+		agenticContextExecutions: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "agentic_context_executions_total"),
+			"Total number of agentic context executions",
 			nodeLabels, nil,
 		),
 
@@ -483,6 +520,11 @@ func NewCollector(c client.HTTPClient, logger *slog.Logger) *Collector {
 			"text_image_embedding processor executions",
 			nodeLabels, nil,
 		),
+		sparseEncodingSeismicExecutions: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "sparse_encoding_seismic_executions_total"),
+			"Total number of sparse encoding seismic executions",
+			nodeLabels, nil,
+		),
 
 		// Memory
 		sparseMemoryUsageBytes: prometheus.NewDesc(
@@ -532,6 +574,8 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.infoRerankByFieldProcessors
 	ch <- c.infoNeuralSparseTwoPhaseProcessors
 	ch <- c.infoNeuralQueryEnricherProcessors
+	ch <- c.infoAgenticContextProcessors
+	ch <- c.infoAgenticQueryTranslatorProcessors
 	ch <- c.infoNormalizationProcessors
 	ch <- c.infoNormMinMaxProcessors
 	ch <- c.infoNormL2Processors
@@ -553,6 +597,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.neuralQueryAgainstSemanticSparseRequests
 	ch <- c.neuralSparseQueryRequests
 	ch <- c.seismicQueryRequests
+	ch <- c.agenticQueryRequests
 
 	// Semantic highlighting
 	ch <- c.semanticHighlightingRequestCount
@@ -563,6 +608,9 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.rerankByFieldExecutions
 	ch <- c.neuralQueryEnricherExecutions
 	ch <- c.rerankMLExecutions
+	ch <- c.mmrNeuralQueryTransformerExecutions
+	ch <- c.agenticQueryTranslatorExecutions
+	ch <- c.agenticContextExecutions
 	ch <- c.normalizationProcessorExecutions
 	ch <- c.rankBasedNormalizationProcessorExecutions
 	ch <- c.combHarmonicExecutions
@@ -582,6 +630,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.semanticFieldChunkingExecutions
 	ch <- c.textChunkingDelimiterExecutions
 	ch <- c.textImageEmbeddingExecutions
+	ch <- c.sparseEncodingSeismicExecutions
 
 	// Memory
 	ch <- c.sparseMemoryUsageBytes
@@ -687,6 +736,8 @@ func (c *Collector) collectClusterMetrics(ch chan<- prometheus.Metric, stats *St
 	ch <- prometheus.MustNewConstMetric(c.infoRerankByFieldProcessors, prometheus.GaugeValue, float64(search.RerankByFieldProcessors), cluster)
 	ch <- prometheus.MustNewConstMetric(c.infoNeuralSparseTwoPhaseProcessors, prometheus.GaugeValue, float64(search.NeuralSparseTwoPhaseProcessors), cluster)
 	ch <- prometheus.MustNewConstMetric(c.infoNeuralQueryEnricherProcessors, prometheus.GaugeValue, float64(search.NeuralQueryEnricherProcessors), cluster)
+	ch <- prometheus.MustNewConstMetric(c.infoAgenticContextProcessors, prometheus.GaugeValue, float64(search.Agentic.AgenticContextProcessors), cluster)
+	ch <- prometheus.MustNewConstMetric(c.infoAgenticQueryTranslatorProcessors, prometheus.GaugeValue, float64(search.Agentic.AgenticQueryTranslatorProcessors), cluster)
 
 	// Info: Hybrid processors
 	hybrid := search.Hybrid
@@ -728,6 +779,7 @@ func (c *Collector) collectNodeMetrics(ch chan<- prometheus.Metric, stats *Stats
 
 		ch <- prometheus.MustNewConstMetric(c.neuralSparseQueryRequests, prometheus.CounterValue, float64(node.Query.NeuralSparse.NeuralSparseQueryRequests), labels...)
 		ch <- prometheus.MustNewConstMetric(c.seismicQueryRequests, prometheus.CounterValue, float64(node.Query.NeuralSparse.SeismicQueryRequests), labels...)
+		ch <- prometheus.MustNewConstMetric(c.agenticQueryRequests, prometheus.CounterValue, float64(node.Query.Agentic.AgenticQueryRequests), labels...)
 
 		// Semantic highlighting
 		ch <- prometheus.MustNewConstMetric(c.semanticHighlightingRequestCount, prometheus.CounterValue, float64(node.SemanticHighlighting.SemanticHighlightingRequestCount), labels...)
@@ -738,6 +790,9 @@ func (c *Collector) collectNodeMetrics(ch chan<- prometheus.Metric, stats *Stats
 		ch <- prometheus.MustNewConstMetric(c.rerankByFieldExecutions, prometheus.CounterValue, float64(node.Processors.Search.RerankByFieldExecutions), labels...)
 		ch <- prometheus.MustNewConstMetric(c.neuralQueryEnricherExecutions, prometheus.CounterValue, float64(node.Processors.Search.NeuralQueryEnricherExecutions), labels...)
 		ch <- prometheus.MustNewConstMetric(c.rerankMLExecutions, prometheus.CounterValue, float64(node.Processors.Search.RerankMLExecutions), labels...)
+		ch <- prometheus.MustNewConstMetric(c.mmrNeuralQueryTransformerExecutions, prometheus.CounterValue, float64(node.Processors.Search.MMRNeuralQueryTransformerExecutions), labels...)
+		ch <- prometheus.MustNewConstMetric(c.agenticQueryTranslatorExecutions, prometheus.CounterValue, float64(node.Processors.Search.Agentic.AgenticQueryTranslatorExecutions), labels...)
+		ch <- prometheus.MustNewConstMetric(c.agenticContextExecutions, prometheus.CounterValue, float64(node.Processors.Search.Agentic.AgenticContextExecutions), labels...)
 
 		// Hybrid processor executions
 		h := node.Processors.Search.Hybrid
@@ -763,6 +818,7 @@ func (c *Collector) collectNodeMetrics(ch chan<- prometheus.Metric, stats *Stats
 		ch <- prometheus.MustNewConstMetric(c.semanticFieldChunkingExecutions, prometheus.CounterValue, float64(i.SemanticFieldChunkingExecutions), labels...)
 		ch <- prometheus.MustNewConstMetric(c.textChunkingDelimiterExecutions, prometheus.CounterValue, float64(i.TextChunkingDelimiterExecutions), labels...)
 		ch <- prometheus.MustNewConstMetric(c.textImageEmbeddingExecutions, prometheus.CounterValue, float64(i.TextImageEmbeddingExecutions), labels...)
+		ch <- prometheus.MustNewConstMetric(c.sparseEncodingSeismicExecutions, prometheus.CounterValue, float64(i.SparseEncodingSeismicExecutions), labels...)
 
 		// Memory (convert KB to bytes)
 		m := node.Memory.Sparse

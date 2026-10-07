@@ -159,6 +159,7 @@ Configuration can be provided via environment variables or CLI flags.
 Processor counts configured in pipelines:
 - Ingest: `info_text_embedding_processors_in_pipelines`, `info_sparse_encoding_processors`, `info_text_chunking_processors`
 - Search: `info_rerank_ml_processors`, `info_neural_query_enricher_processors`
+- Agentic: `info_agentic_context_processors`, `info_agentic_query_translator_processors`
 - Hybrid: `info_normalization_processors`, `info_comb_rrf_processors`, `info_norm_*_processors`
 
 Sparse index counts (OpenSearch 3.9+):
@@ -172,10 +173,12 @@ Metrics marked 3.9+ are emitted only when OpenSearch reports them. On 3.8 the ex
 - `hybrid_query_requests_total`, `hybrid_query_with_filter_requests_total`, `hybrid_query_with_pagination_requests_total`
 - `neural_query_requests_total`, `neural_query_against_knn_requests_total`, `neural_query_against_semantic_dense_requests_total`
 - `neural_sparse_query_requests_total`, `seismic_query_requests_total`
+- `agentic_query_requests_total`
 
 **Processor Execution Metrics:**
-- Ingest: `text_embedding_executions_total`, `sparse_encoding_executions_total`, `text_chunking_executions_total`
-- Search: `rerank_ml_executions_total`, `neural_query_enricher_executions_total`
+- Ingest: `text_embedding_executions_total`, `sparse_encoding_executions_total`, `sparse_encoding_seismic_executions_total`, `text_chunking_executions_total`
+- Search: `rerank_ml_executions_total`, `neural_query_enricher_executions_total`, `mmr_neural_query_transformer_executions_total`
+- Agentic: `agentic_query_translator_executions_total`, `agentic_context_executions_total`
 - Hybrid: `normalization_processor_executions_total`, `comb_rrf_executions_total`
 
 **Memory Metrics:**

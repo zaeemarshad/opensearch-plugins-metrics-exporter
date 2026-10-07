@@ -397,6 +397,15 @@ func TestIntegration_ClientConnectivity(t *testing.T) {
 	t.Logf("Connected to OpenSearch %s", version["number"])
 }
 
+// assertSingleNode checks that a node-scoped stats response covers one node only.
+func assertSingleNode(t *testing.T, stats map[string]interface{}) {
+	t.Helper()
+	nodes, _ := stats["_nodes"].(map[string]interface{})
+	if total, _ := nodes["total"].(float64); total != 1 {
+		t.Errorf("expected _nodes.total 1, got %v", nodes["total"])
+	}
+}
+
 func TestIntegration_KNNStats(t *testing.T) {
 	url := getOpenSearchURL()
 	waitForOpenSearch(t, url)
@@ -417,7 +426,7 @@ func TestIntegration_KNNStats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	body, err := osClient.Get(ctx, "/_plugins/_knn/stats")
+	body, err := osClient.Get(ctx, "/_plugins/_knn/_local/stats")
 	if err != nil {
 		t.Fatalf("failed to fetch k-NN stats: %v", err)
 	}
@@ -430,6 +439,7 @@ func TestIntegration_KNNStats(t *testing.T) {
 	if _, ok := stats["cluster_name"]; !ok {
 		t.Error("expected cluster_name in k-NN stats")
 	}
+	assertSingleNode(t, stats)
 
 	t.Logf("k-NN stats retrieved successfully")
 }
@@ -457,7 +467,23 @@ func TestIntegration_NeuralStats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	body, err := osClient.Get(ctx, "/_plugins/_neural/stats")
+	// The neural stats API ignores _local, so query by the local node ID.
+	body, err := osClient.Get(ctx, "/_nodes/_local?filter_path=nodes.*.name")
+	if err != nil {
+		t.Fatalf("failed to fetch local node: %v", err)
+	}
+	var local struct {
+		Nodes map[string]json.RawMessage `json:"nodes"`
+	}
+	if err := json.Unmarshal(body, &local); err != nil || len(local.Nodes) != 1 {
+		t.Fatalf("expected 1 local node, got %d (err %v)", len(local.Nodes), err)
+	}
+	var nodeID string
+	for id := range local.Nodes {
+		nodeID = id
+	}
+
+	body, err = osClient.Get(ctx, "/_plugins/_neural/"+nodeID+"/stats")
 	if err != nil {
 		t.Fatalf("failed to fetch neural stats: %v", err)
 	}
@@ -470,6 +496,7 @@ func TestIntegration_NeuralStats(t *testing.T) {
 	if _, ok := stats["cluster_name"]; !ok {
 		t.Error("expected cluster_name in neural stats")
 	}
+	assertSingleNode(t, stats)
 
 	t.Logf("Neural stats retrieved successfully")
 }

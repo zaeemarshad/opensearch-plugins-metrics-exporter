@@ -28,8 +28,8 @@ func TestStatsResponseParsing(t *testing.T) {
 	}
 
 	// Verify cluster-level fields
-	if stats.ClusterName != "osearch-store-cell-1" {
-		t.Errorf("expected cluster_name 'osearch-store-cell-1', got '%s'", stats.ClusterName)
+	if stats.ClusterName != "test-cluster" {
+		t.Errorf("expected cluster_name 'test-cluster', got '%s'", stats.ClusterName)
 	}
 
 	if stats.CircuitBreakerTriggered != false {
@@ -59,9 +59,9 @@ func TestStatsResponseParsing(t *testing.T) {
 	}
 
 	// Verify a specific node
-	node, ok := stats.NodeStats["_LV2KO5cQgi9IC77HdTiEA"]
+	node, ok := stats.NodeStats["testnode0000000000001A"]
 	if !ok {
-		t.Fatal("expected node '_LV2KO5cQgi9IC77HdTiEA' in stats")
+		t.Fatal("expected node 'testnode0000000000001A' in stats")
 	}
 
 	if node.GraphMemoryUsage != 18419 {
@@ -81,9 +81,9 @@ func TestStatsResponseParsing(t *testing.T) {
 		t.Errorf("expected 1 index in cache, got %d", len(node.IndicesInCache))
 	}
 
-	indexStats, ok := node.IndicesInCache["test_20250630_01_catalog_en"]
+	indexStats, ok := node.IndicesInCache["test-index"]
 	if !ok {
-		t.Fatal("expected index 'test_20250630_01_catalog_en' in cache")
+		t.Fatal("expected index 'test-index' in cache")
 	}
 
 	if indexStats.GraphCount != 3 {

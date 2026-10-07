@@ -30,21 +30,23 @@ type Config struct {
 	MetricsPath  string
 
 	// Plugin toggles
-	EnableKNN    bool
-	EnableNeural bool
+	EnableKNN                bool
+	EnableNeural             bool
+	EnableSearchBackpressure bool
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		OpenSearchURL:     "http://localhost:9200",
-		OpenSearchTimeout: 10 * time.Second,
-		TLSInsecure:       false,
-		RetryCount:        3,
-		RetryDelay:        1 * time.Second,
-		ExporterPort:      9206,
-		MetricsPath:       "/metrics",
-		EnableKNN:         true,
-		EnableNeural:      true,
+		OpenSearchURL:            "http://localhost:9200",
+		OpenSearchTimeout:        10 * time.Second,
+		TLSInsecure:              false,
+		RetryCount:               3,
+		RetryDelay:               1 * time.Second,
+		ExporterPort:             9206,
+		MetricsPath:              "/metrics",
+		EnableKNN:                true,
+		EnableNeural:             true,
+		EnableSearchBackpressure: true,
 	}
 }
 
@@ -110,6 +112,9 @@ func Load() (*Config, error) {
 	}
 	if enableNeural := os.Getenv("ENABLE_NEURAL"); enableNeural != "" {
 		cfg.EnableNeural = enableNeural == "true" || enableNeural == "1" || enableNeural == "yes"
+	}
+	if enableSBP := os.Getenv("ENABLE_SEARCH_BACKPRESSURE"); enableSBP != "" {
+		cfg.EnableSearchBackpressure = enableSBP == "true" || enableSBP == "1" || enableSBP == "yes"
 	}
 
 	return cfg, nil

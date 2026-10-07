@@ -16,6 +16,7 @@ import (
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/client"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/collector/knn"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/collector/neural"
+	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/collector/searchbackpressure"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/config"
 )
 
@@ -282,7 +283,79 @@ func TestIntegration_NeuralCollector(t *testing.T) {
 		}
 	}
 
+	// Verify up metric is 1
+	for _, mf := range metricFamilies {
+		if mf.GetName() == "opensearch_neural_up" {
+			for _, m := range mf.GetMetric() {
+				if m.GetGauge().GetValue() != 1 {
+					t.Errorf("expected opensearch_neural_up = 1, got %f", m.GetGauge().GetValue())
+				}
+			}
+		}
+	}
+
 	t.Logf("Neural collector gathered %d metric families", len(metricFamilies))
+}
+
+func TestIntegration_SearchBackpressureCollector(t *testing.T) {
+	url := getOpenSearchURL()
+	waitForOpenSearch(t, url)
+
+	cfg := &config.Config{
+		OpenSearchURL:     url,
+		OpenSearchTimeout: 30 * time.Second,
+		RetryCount:        3,
+		RetryDelay:        1 * time.Second,
+	}
+
+	osClient, err := client.New(cfg, nil)
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	defer osClient.Close()
+
+	registry := prometheus.NewRegistry()
+	if err := registry.Register(searchbackpressure.NewCollector(osClient, nil)); err != nil {
+		t.Fatalf("failed to register collector: %v", err)
+	}
+
+	metricFamilies, err := registry.Gather()
+	if err != nil {
+		t.Fatalf("failed to gather metrics: %v", err)
+	}
+
+	values := make(map[string][]float64)
+	for _, mf := range metricFamilies {
+		for _, m := range mf.GetMetric() {
+			values[mf.GetName()] = append(values[mf.GetName()], m.GetGauge().GetValue()+m.GetCounter().GetValue())
+		}
+	}
+
+	if up := values["opensearch_search_backpressure_up"]; len(up) != 1 || up[0] != 1 {
+		t.Errorf("expected opensearch_search_backpressure_up = 1, got %v", up)
+	}
+
+	// Single-node cluster: one series per known mode, exactly one active.
+	modes := values["opensearch_search_backpressure_mode"]
+	active := 0.0
+	for _, v := range modes {
+		active += v
+	}
+	if len(modes) != 3 || active != 1 {
+		t.Errorf("expected 3 mode series with exactly one active, got %v", modes)
+	}
+
+	for _, name := range []string{
+		"opensearch_search_backpressure_task_completions_total",
+		"opensearch_search_backpressure_tracker_cancellations_total",
+		"opensearch_search_backpressure_tracker_rolling_avg_bytes",
+	} {
+		if len(values[name]) == 0 {
+			t.Errorf("required metric %s not found", name)
+		}
+	}
+
+	t.Logf("Search backpressure collector gathered %d metric families", len(metricFamilies))
 }
 
 func TestIntegration_ClientConnectivity(t *testing.T) {
@@ -324,6 +397,15 @@ func TestIntegration_ClientConnectivity(t *testing.T) {
 	t.Logf("Connected to OpenSearch %s", version["number"])
 }
 
+// assertSingleNode checks that a node-scoped stats response covers one node only.
+func assertSingleNode(t *testing.T, stats map[string]interface{}) {
+	t.Helper()
+	nodes, _ := stats["_nodes"].(map[string]interface{})
+	if total, _ := nodes["total"].(float64); total != 1 {
+		t.Errorf("expected _nodes.total 1, got %v", nodes["total"])
+	}
+}
+
 func TestIntegration_KNNStats(t *testing.T) {
 	url := getOpenSearchURL()
 	waitForOpenSearch(t, url)
@@ -344,7 +426,7 @@ func TestIntegration_KNNStats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	body, err := osClient.Get(ctx, "/_plugins/_knn/stats")
+	body, err := osClient.Get(ctx, "/_plugins/_knn/_local/stats")
 	if err != nil {
 		t.Fatalf("failed to fetch k-NN stats: %v", err)
 	}
@@ -357,6 +439,7 @@ func TestIntegration_KNNStats(t *testing.T) {
 	if _, ok := stats["cluster_name"]; !ok {
 		t.Error("expected cluster_name in k-NN stats")
 	}
+	assertSingleNode(t, stats)
 
 	t.Logf("k-NN stats retrieved successfully")
 }
@@ -384,7 +467,12 @@ func TestIntegration_NeuralStats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	body, err := osClient.Get(ctx, "/_plugins/_neural/stats")
+	nodeID, err := client.LocalNodeID(ctx, osClient)
+	if err != nil {
+		t.Fatalf("failed to resolve local node: %v", err)
+	}
+
+	body, err := osClient.Get(ctx, "/_plugins/_neural/"+nodeID+"/stats")
 	if err != nil {
 		t.Fatalf("failed to fetch neural stats: %v", err)
 	}
@@ -397,6 +485,7 @@ func TestIntegration_NeuralStats(t *testing.T) {
 	if _, ok := stats["cluster_name"]; !ok {
 		t.Error("expected cluster_name in neural stats")
 	}
+	assertSingleNode(t, stats)
 
 	t.Logf("Neural stats retrieved successfully")
 }

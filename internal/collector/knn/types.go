@@ -106,6 +106,10 @@ type ClientStats struct {
 	IndexBuildSuccessCount    int64 `json:"index_build_success_count"`
 	IndexBuildFailureCount    int64 `json:"index_build_failure_count"`
 	WaitingTimeInMs           int64 `json:"waiting_time_in_ms"`
+
+	// Added in 3.9; nil on earlier versions.
+	IndexBuildMergeAbortException *int64 `json:"index_build_merge_abort_exception"`
+	IndexBuildTerminalException   *int64 `json:"index_build_terminal_exception"`
 }
 
 type BuildStats struct {

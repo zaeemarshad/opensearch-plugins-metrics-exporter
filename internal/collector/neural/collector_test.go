@@ -14,6 +14,7 @@ import (
 
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/client"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/config"
+	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/testutil"
 )
 
 func getMetricValue(m prometheus.Metric) float64 {
@@ -37,6 +38,28 @@ func loadTestData(t *testing.T) []byte {
 		t.Fatalf("failed to read test data: %v", err)
 	}
 	return data
+}
+
+var testLocalNodeResponse = []byte(`{"nodes":{"` + testutil.LocalNodeID + `":{"name":"test-node"}}}`)
+
+// statsHandler serves the local node lookup and the neural stats for that node only.
+func statsHandler(t *testing.T, stats []byte) http.Handler {
+	t.Helper()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/_nodes/_local":
+			if r.URL.Query().Get("filter_path") != "nodes.*.name" {
+				t.Errorf("unexpected filter_path: %s", r.URL.RawQuery)
+			}
+			w.Write(testLocalNodeResponse)
+		case "/_plugins/_neural/" + testutil.LocalNodeID + "/stats":
+			w.Write(stats)
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
 }
 
 func TestStatsResponseParsing(t *testing.T) {
@@ -120,16 +143,7 @@ func TestStatsResponseParsing(t *testing.T) {
 func TestCollectorCollect(t *testing.T) {
 	testData := loadTestData(t)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/_plugins/_neural/stats" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(testData)
-	}))
+	server := httptest.NewServer(statsHandler(t, testData))
 	defer server.Close()
 
 	cfg := &config.Config{
@@ -272,11 +286,7 @@ func TestMemoryConversion(t *testing.T) {
 	// Verify KB to bytes conversion
 	testData := loadTestData(t)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(testData)
-	}))
+	server := httptest.NewServer(statsHandler(t, testData))
 	defer server.Close()
 
 	cfg := &config.Config{
@@ -330,11 +340,7 @@ func TestCollectorWithEmptyResponse(t *testing.T) {
 		"nodes": {}
 	}`
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(emptyResponse))
-	}))
+	server := httptest.NewServer(statsHandler(t, []byte(emptyResponse)))
 	defer server.Close()
 
 	cfg := &config.Config{
@@ -361,5 +367,85 @@ func TestCollectorWithEmptyResponse(t *testing.T) {
 	_, err = registry.Gather()
 	if err != nil {
 		t.Fatalf("failed to gather metrics with empty response: %v", err)
+	}
+}
+
+func TestStatsAreScopedToLocalNode(t *testing.T) {
+	mock := &testutil.MockClient{Response: loadTestData(t)}
+	collector := NewCollector(mock, nil)
+
+	ch := make(chan prometheus.Metric, 200)
+	collector.Collect(ch)
+	close(ch)
+
+	want := []string{client.LocalNodePath, "/_plugins/_neural/" + testutil.LocalNodeID + "/stats"}
+	if strings.Join(mock.Paths, " ") != strings.Join(want, " ") {
+		t.Errorf("expected requests %v, got %v", want, mock.Paths)
+	}
+}
+
+func TestUpIsZeroWhenLocalNodeUnresolved(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/_nodes/_local" {
+			t.Errorf("stats must not be requested without a local node ID, got %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"nodes":{"../../_cluster/settings":{}}}`))
+	}))
+	defer server.Close()
+
+	osClient, err := client.New(&config.Config{OpenSearchURL: server.URL, OpenSearchTimeout: time.Second}, nil)
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	defer osClient.Close()
+
+	ch := make(chan prometheus.Metric, 10)
+	NewCollector(osClient, nil).Collect(ch)
+	close(ch)
+	for m := range ch {
+		if strings.Contains(m.Desc().String(), "opensearch_neural_up") && getMetricValue(m) != 0 {
+			t.Errorf("expected up 0, got %v", getMetricValue(m))
+		}
+	}
+}
+
+// Each agentic, seismic and MMR field has a distinct value, so a field wired to the wrong metric fails.
+func TestAgenticSeismicMMRMetrics(t *testing.T) {
+	body := []byte(`{
+		"cluster_name": "c",
+		"info": {"processors": {"search": {"agentic": {"agentic_context_processors": 1, "agentic_query_translator_processors": 2}}}},
+		"nodes": {"n1": {
+			"query": {"agentic": {"agentic_query_requests": 3}},
+			"processors": {
+				"search": {"mmr_neural_query_transformer_executions": 4, "agentic": {"agentic_query_translator_executions": 5, "agentic_context_executions": 6}},
+				"ingest": {"sparse_encoding_seismic_executions": 7}
+			}
+		}}
+	}`)
+
+	ch := make(chan prometheus.Metric, 200)
+	NewCollector(&testutil.MockClient{Response: body}, nil).Collect(ch)
+	close(ch)
+
+	got := make(map[string]float64)
+	for m := range ch {
+		desc := m.Desc().String()
+		start := strings.Index(desc, `fqName: "`) + len(`fqName: "`)
+		got[desc[start:start+strings.Index(desc[start:], `"`)]] = getMetricValue(m)
+	}
+
+	want := map[string]float64{
+		"opensearch_neural_info_agentic_context_processors":               1,
+		"opensearch_neural_info_agentic_query_translator_processors":      2,
+		"opensearch_neural_agentic_query_requests_total":                  3,
+		"opensearch_neural_mmr_neural_query_transformer_executions_total": 4,
+		"opensearch_neural_agentic_query_translator_executions_total":     5,
+		"opensearch_neural_agentic_context_executions_total":              6,
+		"opensearch_neural_sparse_encoding_seismic_executions_total":      7,
+	}
+	for name, v := range want {
+		if got[name] != v {
+			t.Errorf("%s: expected %v, got %v", name, v, got[name])
+		}
 	}
 }

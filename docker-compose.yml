@@ -1,6 +1,6 @@
 services:
   opensearch:
-    image: opensearchproject/opensearch:3.5.0
+    image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-3.9.0}
     container_name: opensearch-test
     environment:
       - cluster.name=opensearch-cluster
@@ -38,6 +38,7 @@ services:
       - OPENSEARCH_URL=http://opensearch:9200
       - ENABLE_KNN=true
       - ENABLE_NEURAL=true
+      - ENABLE_SEARCH_BACKPRESSURE=true
       - LOG_LEVEL=debug
     ports:
       - "9206:9206"

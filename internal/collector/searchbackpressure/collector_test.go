@@ -1,7 +1,6 @@
 package searchbackpressure
 
 import (
-	"context"
 	"errors"
 	"maps"
 	"os"
@@ -9,20 +8,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+
+	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/testutil"
 )
-
-type mockClient struct {
-	response []byte
-	err      error
-	path     string
-}
-
-func (m *mockClient) Get(_ context.Context, path string) ([]byte, error) {
-	m.path = path
-	return m.response, m.err
-}
-
-func (m *mockClient) Close() {}
 
 func loadTestData(t testing.TB) []byte {
 	t.Helper()
@@ -92,17 +80,17 @@ func mustValue(t *testing.T, metrics map[string][]*dto.Metric, name string, labe
 
 // Scoping to the local node and the search_backpressure metric keeps each scrape off the other nodes.
 func TestCollectorRequestsFilteredEndpoint(t *testing.T) {
-	mock := &mockClient{response: loadTestData(t)}
+	mock := &testutil.MockClient{Response: loadTestData(t)}
 	gather(t, NewCollector(mock, nil))
 
-	if mock.path != "/_nodes/_local/stats/search_backpressure" {
-		t.Errorf("expected path /_nodes/_local/stats/search_backpressure, got %s", mock.path)
+	if len(mock.Paths) != 1 || mock.Paths[0] != "/_nodes/_local/stats/search_backpressure" {
+		t.Errorf("expected one request to /_nodes/_local/stats/search_backpressure, got %v", mock.Paths)
 	}
 }
 
 // Alerts on "mode != enforced" need exactly one active mode per node.
 func TestModeIsOneHotPerNode(t *testing.T) {
-	metrics := gather(t, NewCollector(&mockClient{response: loadTestData(t)}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: loadTestData(t)}, nil))
 
 	want := map[string]string{
 		"node-data-1":   "enforced",
@@ -125,7 +113,7 @@ func TestModeIsOneHotPerNode(t *testing.T) {
 
 func TestUnknownModeIsStillReported(t *testing.T) {
 	body := []byte(`{"cluster_name":"c","nodes":{"n1":{"search_backpressure":{"mode":"future_mode"}}}}`)
-	metrics := gather(t, NewCollector(&mockClient{response: body}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: body}, nil))
 
 	if got := mustValue(t, metrics, "opensearch_search_backpressure_mode", map[string]string{"node": "n1", "mode": "future_mode"}); got != 1 {
 		t.Errorf("expected unknown mode to be reported as 1, got %v", got)
@@ -135,7 +123,7 @@ func TestUnknownModeIsStillReported(t *testing.T) {
 // Task-level cancellations and per-tracker cancellations are separate counters; mixing them
 // up would hide which resource triggered the cancellation.
 func TestCancellationCountersMapToCorrectSeries(t *testing.T) {
-	metrics := gather(t, NewCollector(&mockClient{response: loadTestData(t)}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: loadTestData(t)}, nil))
 	shard := map[string]string{"node": "node-data-1", "task_type": "search_shard_task"}
 
 	cases := []struct {
@@ -158,7 +146,7 @@ func TestCancellationCountersMapToCorrectSeries(t *testing.T) {
 }
 
 func TestTrackerResourceGauges(t *testing.T) {
-	metrics := gather(t, NewCollector(&mockClient{response: loadTestData(t)}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: loadTestData(t)}, nil))
 	heap := map[string]string{"node": "node-data-1", "task_type": "search_shard_task", "tracker": "heap_usage"}
 	cpu := with(heap, "tracker", "cpu_usage")
 
@@ -187,7 +175,7 @@ func TestTrackerResourceGauges(t *testing.T) {
 
 // A null or absent native memory tracker must not produce zero-valued series that look like real data.
 func TestMissingNativeMemoryTrackerEmitsNoSeries(t *testing.T) {
-	metrics := gather(t, NewCollector(&mockClient{response: loadTestData(t)}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: loadTestData(t)}, nil))
 	name := "opensearch_search_backpressure_tracker_cancellations_total"
 
 	for _, labels := range []map[string]string{
@@ -211,7 +199,7 @@ func TestMissingNativeMemoryTrackerEmitsNoSeries(t *testing.T) {
 
 func TestNodeWithoutSearchBackpressureIsSkipped(t *testing.T) {
 	body := []byte(`{"cluster_name":"c","nodes":{"n1":{"name":"old-node"}}}`)
-	metrics := gather(t, NewCollector(&mockClient{response: body}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: body}, nil))
 
 	if len(metrics["opensearch_search_backpressure_mode"]) != 0 {
 		t.Errorf("expected no mode series for a node without search_backpressure")
@@ -222,7 +210,7 @@ func TestNodeWithoutSearchBackpressureIsSkipped(t *testing.T) {
 }
 
 func TestUpIsZeroOnFetchError(t *testing.T) {
-	metrics := gather(t, NewCollector(&mockClient{err: errors.New("connection refused")}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Err: errors.New("connection refused")}, nil))
 
 	if got := mustValue(t, metrics, "opensearch_search_backpressure_up", map[string]string{"cluster": "unknown"}); got != 0 {
 		t.Errorf("expected up 0 on error, got %v", got)
@@ -233,7 +221,7 @@ func TestUpIsZeroOnFetchError(t *testing.T) {
 }
 
 func TestUpIsZeroOnInvalidJSON(t *testing.T) {
-	metrics := gather(t, NewCollector(&mockClient{response: []byte(`not json`)}, nil))
+	metrics := gather(t, NewCollector(&testutil.MockClient{Response: []byte(`not json`)}, nil))
 
 	if got := mustValue(t, metrics, "opensearch_search_backpressure_up", nil); got != 0 {
 		t.Errorf("expected up 0 on invalid JSON, got %v", got)

@@ -13,12 +13,11 @@ A Prometheus exporter for OpenSearch plugin metrics. This exporter collects metr
 
 ## Node Scope
 
-Every query returns stats for the node at `OPENSEARCH_URL` only. Run one exporter per node, with `OPENSEARCH_URL` set to that node.
+Every query returns stats for the node at `OPENSEARCH_URL` only. Run one exporter per node, with `OPENSEARCH_URL` set to that node. The neural stats API ignores `_local`, so the exporter gets the local node ID from `/_nodes/_local` on each scrape.
 
-- k-NN and search backpressure use the `_local` node filter.
-- The neural stats API ignores `_local`. The exporter gets the local node ID from `/_nodes/_local` on each scrape and queries by that ID.
-- Cluster-level metrics are the same on every node, e.g. `opensearch_knn_circuit_breaker_triggered`, `opensearch_knn_model_index_status` and `opensearch_neural_info_*`. Aggregate them with `max by (cluster)`, not `sum`.
-- Tested against OpenSearch 3.8.0 and 3.9.0.
+Cluster-level metrics are the same on every node, e.g. `opensearch_knn_circuit_breaker_triggered` and `opensearch_neural_info_*`. Aggregate them with `max by (cluster)`.
+
+The exporter is tested against OpenSearch 3.8.0 and 3.9.0.
 
 ## Features
 

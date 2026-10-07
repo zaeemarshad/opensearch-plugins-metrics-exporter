@@ -671,7 +671,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
-	nodeID, err := c.localNodeID(ctx)
+	nodeID, err := client.LocalNodeID(ctx, c.client)
 	if err != nil {
 		return nil, err
 	}
@@ -687,29 +687,6 @@ func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
 	}
 
 	return &stats, nil
-}
-
-// localNodeID returns the ID of the node the client is connected to.
-// The neural stats API accepts only 22-character node IDs and ignores _local.
-func (c *Collector) localNodeID(ctx context.Context) (string, error) {
-	body, err := c.client.Get(ctx, "/_nodes/_local?filter_path=nodes.*.name")
-	if err != nil {
-		return "", err
-	}
-
-	var resp struct {
-		Nodes map[string]json.RawMessage `json:"nodes"`
-	}
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return "", fmt.Errorf("failed to unmarshal local node response: %w", err)
-	}
-	if len(resp.Nodes) != 1 {
-		return "", fmt.Errorf("expected 1 local node, got %d", len(resp.Nodes))
-	}
-	for id := range resp.Nodes {
-		return id, nil
-	}
-	return "", nil
 }
 
 func (c *Collector) collectClusterMetrics(ch chan<- prometheus.Metric, stats *StatsResponse) {

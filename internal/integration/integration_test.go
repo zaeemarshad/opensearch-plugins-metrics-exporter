@@ -467,23 +467,12 @@ func TestIntegration_NeuralStats(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// The neural stats API ignores _local, so query by the local node ID.
-	body, err := osClient.Get(ctx, "/_nodes/_local?filter_path=nodes.*.name")
+	nodeID, err := client.LocalNodeID(ctx, osClient)
 	if err != nil {
-		t.Fatalf("failed to fetch local node: %v", err)
-	}
-	var local struct {
-		Nodes map[string]json.RawMessage `json:"nodes"`
-	}
-	if err := json.Unmarshal(body, &local); err != nil || len(local.Nodes) != 1 {
-		t.Fatalf("expected 1 local node, got %d (err %v)", len(local.Nodes), err)
-	}
-	var nodeID string
-	for id := range local.Nodes {
-		nodeID = id
+		t.Fatalf("failed to resolve local node: %v", err)
 	}
 
-	body, err = osClient.Get(ctx, "/_plugins/_neural/"+nodeID+"/stats")
+	body, err := osClient.Get(ctx, "/_plugins/_neural/"+nodeID+"/stats")
 	if err != nil {
 		t.Fatalf("failed to fetch neural stats: %v", err)
 	}

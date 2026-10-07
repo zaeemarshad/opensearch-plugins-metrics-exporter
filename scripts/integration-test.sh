@@ -151,7 +151,6 @@ pass "Neural Search stats enabled"
 # Check Neural Search stats
 echo ""
 echo "8. Checking Neural Search stats..."
-# The neural stats API ignores _local, so query by the local node ID.
 LOCAL_NODE_ID=$(curl -s "$OPENSEARCH_URL/_nodes/_local?filter_path=nodes.*.name" | grep -o '"nodes":{"[^"]*"' | cut -d'"' -f4)
 info "Local node ID: $LOCAL_NODE_ID"
 NEURAL_STATS=$(curl -s "$OPENSEARCH_URL/_plugins/_neural/$LOCAL_NODE_ID/stats" 2>&1)

@@ -14,6 +14,7 @@ import (
 
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/client"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/config"
+	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/testutil"
 )
 
 func getMetricValue(m prometheus.Metric) float64 {
@@ -39,9 +40,7 @@ func loadTestData(t *testing.T) []byte {
 	return data
 }
 
-const testLocalNodeID = "Z7eXl9nKRnmJP1GG22lqng"
-
-var testLocalNodeResponse = []byte(`{"nodes":{"` + testLocalNodeID + `":{"name":"test-node"}}}`)
+var testLocalNodeResponse = []byte(`{"nodes":{"` + testutil.LocalNodeID + `":{"name":"test-node"}}}`)
 
 // statsHandler serves the local node lookup and the neural stats for that node only.
 func statsHandler(t *testing.T, stats []byte) http.Handler {
@@ -54,7 +53,7 @@ func statsHandler(t *testing.T, stats []byte) http.Handler {
 				t.Errorf("unexpected filter_path: %s", r.URL.RawQuery)
 			}
 			w.Write(testLocalNodeResponse)
-		case "/_plugins/_neural/" + testLocalNodeID + "/stats":
+		case "/_plugins/_neural/" + testutil.LocalNodeID + "/stats":
 			w.Write(stats)
 		default:
 			t.Errorf("unexpected path: %s", r.URL.Path)
@@ -371,52 +370,42 @@ func TestCollectorWithEmptyResponse(t *testing.T) {
 	}
 }
 
-// The neural stats API ignores _local, so the collector must query by the resolved node ID
-// to keep every scrape off the other nodes in the cluster.
 func TestStatsAreScopedToLocalNode(t *testing.T) {
-	mock := &mockClient{response: loadTestData(t)}
+	mock := &testutil.MockClient{Response: loadTestData(t)}
 	collector := NewCollector(mock, nil)
 
 	ch := make(chan prometheus.Metric, 200)
 	collector.Collect(ch)
 	close(ch)
 
-	want := []string{"/_nodes/_local?filter_path=nodes.*.name", "/_plugins/_neural/" + testLocalNodeID + "/stats"}
-	if strings.Join(mock.paths, " ") != strings.Join(want, " ") {
-		t.Errorf("expected requests %v, got %v", want, mock.paths)
+	want := []string{client.LocalNodePath, "/_plugins/_neural/" + testutil.LocalNodeID + "/stats"}
+	if strings.Join(mock.Paths, " ") != strings.Join(want, " ") {
+		t.Errorf("expected requests %v, got %v", want, mock.Paths)
 	}
 }
 
 func TestUpIsZeroWhenLocalNodeUnresolved(t *testing.T) {
-	for name, body := range map[string]string{
-		"no nodes":       `{"nodes":{}}`,
-		"multiple nodes": `{"nodes":{"a":{},"b":{}}}`,
-		"invalid json":   `not json`,
-	} {
-		t.Run(name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != "/_nodes/_local" {
-					t.Errorf("stats must not be requested without a local node ID, got %s", r.URL.Path)
-				}
-				w.Write([]byte(body))
-			}))
-			defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/_nodes/_local" {
+			t.Errorf("stats must not be requested without a local node ID, got %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"nodes":{"../../_cluster/settings":{}}}`))
+	}))
+	defer server.Close()
 
-			osClient, err := client.New(&config.Config{OpenSearchURL: server.URL, OpenSearchTimeout: time.Second}, nil)
-			if err != nil {
-				t.Fatalf("failed to create client: %v", err)
-			}
-			defer osClient.Close()
+	osClient, err := client.New(&config.Config{OpenSearchURL: server.URL, OpenSearchTimeout: time.Second}, nil)
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	defer osClient.Close()
 
-			ch := make(chan prometheus.Metric, 10)
-			NewCollector(osClient, nil).Collect(ch)
-			close(ch)
-			for m := range ch {
-				if strings.Contains(m.Desc().String(), "opensearch_neural_up") && getMetricValue(m) != 0 {
-					t.Errorf("expected up 0, got %v", getMetricValue(m))
-				}
-			}
-		})
+	ch := make(chan prometheus.Metric, 10)
+	NewCollector(osClient, nil).Collect(ch)
+	close(ch)
+	for m := range ch {
+		if strings.Contains(m.Desc().String(), "opensearch_neural_up") && getMetricValue(m) != 0 {
+			t.Errorf("expected up 0, got %v", getMetricValue(m))
+		}
 	}
 }
 
@@ -435,7 +424,7 @@ func TestAgenticSeismicMMRMetrics(t *testing.T) {
 	}`)
 
 	ch := make(chan prometheus.Metric, 200)
-	NewCollector(&mockClient{response: body}, nil).Collect(ch)
+	NewCollector(&testutil.MockClient{Response: body}, nil).Collect(ch)
 	close(ch)
 
 	got := make(map[string]float64)

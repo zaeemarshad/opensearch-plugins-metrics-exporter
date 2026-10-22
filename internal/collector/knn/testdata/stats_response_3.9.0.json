@@ -1,0 +1,96 @@
+{
+    "_nodes": {
+        "total": 1,
+        "successful": 1,
+        "failed": 0
+    },
+    "cluster_name": "docker-cluster",
+    "circuit_breaker_triggered": false,
+    "model_index_status": null,
+    "nodes": {
+        "24kYvYHORyyLKBIu8QHmjw": {
+            "remote_vector_index_build_stats": {
+                "repository_stats": {
+                    "read_success_count": 0,
+                    "read_failure_count": 0,
+                    "successful_read_time_in_millis": 0,
+                    "write_success_count": 0,
+                    "write_failure_count": 0,
+                    "successful_write_time_in_millis": 0
+                },
+                "client_stats": {
+                    "status_request_failure_count": 0,
+                    "index_build_terminal_exception": 0,
+                    "status_request_success_count": 0,
+                    "index_build_success_count": 0,
+                    "index_build_failure_count": 0,
+                    "build_request_failure_count": 0,
+                    "index_build_merge_abort_exception": 0,
+                    "build_request_success_count": 0,
+                    "waiting_time_in_ms": 0
+                },
+                "build_stats": {
+                    "remote_index_build_flush_time_in_millis": 0,
+                    "remote_index_build_current_merge_operations": 0,
+                    "remote_index_build_current_flush_operations": 0,
+                    "remote_index_build_current_merge_size": 0,
+                    "remote_index_build_current_flush_size": 0,
+                    "remote_index_build_merge_time_in_millis": 0
+                }
+            },
+            "max_distance_query_with_filter_requests": 0,
+            "graph_memory_usage_percentage": 0.0,
+            "graph_query_requests": 3,
+            "graph_memory_usage": 0,
+            "cache_capacity_reached": false,
+            "load_success_count": 3,
+            "training_memory_usage": 0,
+            "indices_in_cache": {
+                "t": {
+                    "graph_memory_usage_percentage": 0.0,
+                    "graph_memory_usage": 0,
+                    "graph_count": 3
+                }
+            },
+            "script_query_errors": 0,
+            "hit_count": 0,
+            "knn_query_requests": 1,
+            "total_load_time": 10825708,
+            "miss_count": 3,
+            "min_score_query_requests": 0,
+            "knn_query_with_filter_requests": 0,
+            "training_memory_usage_percentage": 0.0,
+            "max_distance_query_requests": 0,
+            "lucene_initialized": false,
+            "graph_index_requests": 0,
+            "faiss_initialized": true,
+            "load_exception_count": 0,
+            "training_errors": 0,
+            "min_score_query_with_filter_requests": 0,
+            "eviction_count": 0,
+            "nmslib_initialized": false,
+            "script_compilations": 0,
+            "script_query_requests": 0,
+            "graph_stats": {
+                "merge": {
+                    "current": 0,
+                    "total": 0,
+                    "total_time_in_millis": 0,
+                    "current_docs": 0,
+                    "total_docs": 0,
+                    "total_size_in_bytes": 0,
+                    "current_size_in_bytes": 0
+                },
+                "refresh": {
+                    "total": 3,
+                    "total_time_in_millis": 68
+                }
+            },
+            "graph_query_errors": 0,
+            "indexing_from_model_degraded": false,
+            "graph_index_errors": 0,
+            "training_requests": 0,
+            "script_compilation_errors": 0
+        }
+    }
+}

@@ -16,6 +16,7 @@ import (
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/client"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/collector/knn"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/collector/neural"
+	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/collector/searchbackpressure"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/config"
 	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/exporter"
 )
@@ -45,10 +46,13 @@ func newRootCmd() *cobra.Command {
 in Prometheus format.
 
 Currently supported plugins:
-  - k-NN (vector search) - /_plugins/_knn/stats
-  - Neural Search (semantic/hybrid search) - /_plugins/_neural/stats
+  - k-NN (vector search) - /_plugins/_knn/_local/stats
+  - Neural Search (semantic/hybrid search) - /_plugins/_neural/{nodeId}/stats
     Note: Neural Search stats must be enabled via cluster setting:
     PUT /_cluster/settings {"persistent":{"plugins.neural_search.stats_enabled":true}}
+
+Core metrics:
+  - Search backpressure - /_nodes/_local/stats/search_backpressure
 
 Environment variables:
   OPENSEARCH_URL          OpenSearch URL (default: http://localhost:9200)
@@ -64,7 +68,8 @@ Environment variables:
   EXPORTER_PORT           Port to expose metrics (default: 9206)
   METRICS_PATH            Metrics endpoint path (default: /metrics)
   ENABLE_KNN              Enable k-NN plugin metrics (default: true)
-  ENABLE_NEURAL           Enable Neural Search plugin metrics (default: true)`,
+  ENABLE_NEURAL           Enable Neural Search plugin metrics (default: true)
+  ENABLE_SEARCH_BACKPRESSURE  Enable search backpressure metrics (default: true)`,
 		Version: fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.WithValue(cmd.Context(), cmdKey, cmd)
@@ -89,6 +94,7 @@ Environment variables:
 	flags.String("log-format", "text", "Log format (text, json)")
 	flags.Bool("enable-knn", true, "Enable k-NN plugin metrics collection")
 	flags.Bool("enable-neural", true, "Enable Neural Search plugin metrics collection")
+	flags.Bool("enable-search-backpressure", true, "Enable search backpressure metrics collection")
 
 	_ = viper.BindPFlag("opensearch_url", flags.Lookup("url"))
 	_ = viper.BindPFlag("opensearch_username", flags.Lookup("username"))
@@ -104,6 +110,7 @@ Environment variables:
 	_ = viper.BindPFlag("metrics_path", flags.Lookup("metrics-path"))
 	_ = viper.BindPFlag("enable_knn", flags.Lookup("enable-knn"))
 	_ = viper.BindPFlag("enable_neural", flags.Lookup("enable-neural"))
+	_ = viper.BindPFlag("enable_search_backpressure", flags.Lookup("enable-search-backpressure"))
 	_ = viper.BindPFlag("log_level", flags.Lookup("log-level"))
 	_ = viper.BindPFlag("log_format", flags.Lookup("log-format"))
 
@@ -170,6 +177,9 @@ func run(ctx context.Context) error {
 		if cmd.Flags().Changed("enable-neural") {
 			cfg.EnableNeural = viper.GetBool("enable_neural")
 		}
+		if cmd.Flags().Changed("enable-search-backpressure") {
+			cfg.EnableSearchBackpressure = viper.GetBool("enable_search_backpressure")
+		}
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -184,6 +194,7 @@ func run(ctx context.Context) error {
 		"retry_count", cfg.RetryCount,
 		"enable_knn", cfg.EnableKNN,
 		"enable_neural", cfg.EnableNeural,
+		"enable_search_backpressure", cfg.EnableSearchBackpressure,
 	)
 
 	osClient, err := client.New(cfg, logger)
@@ -200,6 +211,10 @@ func run(ctx context.Context) error {
 	if cfg.EnableNeural {
 		logger.Info("enabling Neural Search plugin collector")
 		collectors = append(collectors, neural.NewCollector(osClient, logger))
+	}
+	if cfg.EnableSearchBackpressure {
+		logger.Info("enabling search backpressure collector")
+		collectors = append(collectors, searchbackpressure.NewCollector(osClient, logger))
 	}
 
 	if len(collectors) == 0 {

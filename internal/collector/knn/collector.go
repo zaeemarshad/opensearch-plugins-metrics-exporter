@@ -1,5 +1,5 @@
 // Package knn provides a Prometheus collector for OpenSearch k-NN plugin metrics.
-// It fetches statistics from the /_plugins/_knn/stats API endpoint and exposes
+// It fetches statistics for the local node from the /_plugins/_knn/_local/stats API endpoint and exposes
 // them as Prometheus metrics with the opensearch_knn_ prefix.
 package knn
 
@@ -118,6 +118,8 @@ type Collector struct {
 	remoteBuildClientIndexBuildSuccessTotal    *prometheus.Desc
 	remoteBuildClientIndexBuildFailureTotal    *prometheus.Desc
 	remoteBuildClientWaitingTimeMilliseconds   *prometheus.Desc
+	remoteBuildClientMergeAbortExceptionsTotal *prometheus.Desc
+	remoteBuildClientTerminalExceptionsTotal   *prometheus.Desc
 
 	// Remote build - build
 	remoteBuildFlushTimeMilliseconds  *prometheus.Desc
@@ -477,6 +479,16 @@ func NewCollector(c client.HTTPClient, logger *slog.Logger) *Collector {
 			"Total number of failed index builds",
 			nodeLabels, nil,
 		),
+		remoteBuildClientMergeAbortExceptionsTotal: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "remote_build_client_merge_abort_exceptions_total"),
+			"Total number of remote index builds aborted during merge (OpenSearch 3.9+)",
+			nodeLabels, nil,
+		),
+		remoteBuildClientTerminalExceptionsTotal: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "remote_build_client_terminal_exceptions_total"),
+			"Total number of remote index builds that failed with a terminal exception (OpenSearch 3.9+)",
+			nodeLabels, nil,
+		),
 		remoteBuildClientWaitingTimeMilliseconds: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "remote_build_client_waiting_time_milliseconds"),
 			"Time spent waiting for remote builds in milliseconds",
@@ -592,6 +604,8 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.remoteBuildClientBuildRequestFailureTotal
 	ch <- c.remoteBuildClientIndexBuildSuccessTotal
 	ch <- c.remoteBuildClientIndexBuildFailureTotal
+	ch <- c.remoteBuildClientMergeAbortExceptionsTotal
+	ch <- c.remoteBuildClientTerminalExceptionsTotal
 	ch <- c.remoteBuildClientWaitingTimeMilliseconds
 
 	ch <- c.remoteBuildFlushTimeMilliseconds
@@ -636,7 +650,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *Collector) fetchStats(ctx context.Context) (*StatsResponse, error) {
-	body, err := c.client.Get(ctx, "/_plugins/_knn/stats")
+	body, err := c.client.Get(ctx, "/_plugins/_knn/_local/stats")
 	if err != nil {
 		return nil, err
 	}
@@ -814,6 +828,14 @@ func (c *Collector) collectNodeMetrics(ch chan<- prometheus.Metric, stats *Stats
 			float64(client.IndexBuildFailureCount), labels...)
 		ch <- prometheus.MustNewConstMetric(c.remoteBuildClientWaitingTimeMilliseconds, prometheus.GaugeValue,
 			float64(client.WaitingTimeInMs), labels...)
+		if client.IndexBuildMergeAbortException != nil {
+			ch <- prometheus.MustNewConstMetric(c.remoteBuildClientMergeAbortExceptionsTotal, prometheus.CounterValue,
+				float64(*client.IndexBuildMergeAbortException), labels...)
+		}
+		if client.IndexBuildTerminalException != nil {
+			ch <- prometheus.MustNewConstMetric(c.remoteBuildClientTerminalExceptionsTotal, prometheus.CounterValue,
+				float64(*client.IndexBuildTerminalException), labels...)
+		}
 
 		// Remote build - build
 		build := node.RemoteVectorIndexBuildStats.BuildStats

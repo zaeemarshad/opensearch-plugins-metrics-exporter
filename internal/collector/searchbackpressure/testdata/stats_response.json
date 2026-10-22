@@ -1,0 +1,86 @@
+{
+  "_nodes": {"total": 3, "successful": 3, "failed": 0},
+  "cluster_name": "test-cluster",
+  "nodes": {
+    "node-data-1": {
+      "name": "test-data-1",
+      "roles": ["data", "ingest"],
+      "search_backpressure": {
+        "search_task": {
+          "resource_tracker_stats": {
+            "heap_usage_tracker": {"cancellation_count": 0, "current_max_bytes": 0, "current_avg_bytes": 0, "rolling_avg_bytes": 6592632},
+            "elapsed_time_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0},
+            "native_memory_usage_tracker": null,
+            "cpu_usage_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0}
+          },
+          "completion_count": 3,
+          "cancellation_stats": {"cancellation_count": 0, "cancellation_limit_reached_count": 0}
+        },
+        "search_shard_task": {
+          "resource_tracker_stats": {
+            "heap_usage_tracker": {"cancellation_count": 4, "current_max_bytes": 732617560, "current_avg_bytes": 382295610, "rolling_avg_bytes": 47743713},
+            "elapsed_time_tracker": {"cancellation_count": 2, "current_max_millis": 255, "current_avg_millis": 129},
+            "native_memory_usage_tracker": null,
+            "cpu_usage_tracker": {"cancellation_count": 1, "current_max_millis": 210, "current_avg_millis": 89}
+          },
+          "completion_count": 44471760,
+          "cancellation_stats": {"cancellation_count": 7, "cancellation_limit_reached_count": 3}
+        },
+        "mode": "enforced"
+      },
+      "native_memory": {"total_estimated_bytes": 6048854016}
+    },
+    "node-data-2": {
+      "name": "test-data-2",
+      "roles": ["data", "ingest"],
+      "search_backpressure": {
+        "search_task": {
+          "resource_tracker_stats": {
+            "cpu_usage_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0},
+            "elapsed_time_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0},
+            "heap_usage_tracker": {"cancellation_count": 0, "current_max_bytes": 0, "current_avg_bytes": 0, "rolling_avg_bytes": 6611450}
+          },
+          "completion_count": 3,
+          "cancellation_stats": {"cancellation_count": 0, "cancellation_limit_reached_count": 0}
+        },
+        "search_shard_task": {
+          "resource_tracker_stats": {
+            "cpu_usage_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0},
+            "elapsed_time_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0},
+            "heap_usage_tracker": {"cancellation_count": 0, "current_max_bytes": 0, "current_avg_bytes": 0, "rolling_avg_bytes": 3488871}
+          },
+          "completion_count": 28354667,
+          "cancellation_stats": {"cancellation_count": 0, "cancellation_limit_reached_count": 0}
+        },
+        "mode": "monitor_only"
+      }
+    },
+    "node-client-1": {
+      "name": "test-client-1",
+      "roles": [],
+      "search_backpressure": {
+        "search_task": {
+          "resource_tracker_stats": {
+            "heap_usage_tracker": {"cancellation_count": 0, "current_max_bytes": 632, "current_avg_bytes": 105, "rolling_avg_bytes": 142447},
+            "elapsed_time_tracker": {"cancellation_count": 0, "current_max_millis": 332, "current_avg_millis": 186},
+            "native_memory_usage_tracker": {"cancellation_count": 5, "current_max_bytes": 2048, "current_avg_bytes": 1024},
+            "cpu_usage_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0}
+          },
+          "completion_count": 1199752,
+          "cancellation_stats": {"cancellation_count": 0, "cancellation_limit_reached_count": 0}
+        },
+        "search_shard_task": {
+          "resource_tracker_stats": {
+            "heap_usage_tracker": {"cancellation_count": 0, "current_max_bytes": 0, "current_avg_bytes": 0, "rolling_avg_bytes": 0},
+            "elapsed_time_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0},
+            "native_memory_usage_tracker": null,
+            "cpu_usage_tracker": {"cancellation_count": 0, "current_max_millis": 0, "current_avg_millis": 0}
+          },
+          "completion_count": 0,
+          "cancellation_stats": {"cancellation_count": 0, "cancellation_limit_reached_count": 0}
+        },
+        "mode": "disabled"
+      }
+    }
+  }
+}

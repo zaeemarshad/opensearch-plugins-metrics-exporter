@@ -1,25 +1,15 @@
 package neural
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 	"os"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/opensearch-project/opensearch-plugins-metrics-exporter/internal/testutil"
 )
-
-// mockClient implements client.HTTPClient for benchmarking.
-type mockClient struct {
-	response []byte
-}
-
-func (m *mockClient) Get(_ context.Context, _ string) ([]byte, error) {
-	return m.response, nil
-}
-
-func (m *mockClient) Close() {}
 
 func BenchmarkCollectorCollect(b *testing.B) {
 	testData, err := os.ReadFile("testdata/stats_response.json")
@@ -27,7 +17,7 @@ func BenchmarkCollectorCollect(b *testing.B) {
 		b.Fatalf("failed to read test data: %v", err)
 	}
 
-	mock := &mockClient{response: testData}
+	mock := &testutil.MockClient{Response: testData}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	collector := NewCollector(mock, logger)
 
@@ -47,7 +37,7 @@ func BenchmarkCollectorCollect(b *testing.B) {
 }
 
 func BenchmarkCollectorDescribe(b *testing.B) {
-	mock := &mockClient{response: []byte(`{}`)}
+	mock := &testutil.MockClient{Response: []byte(`{}`)}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	collector := NewCollector(mock, logger)
 

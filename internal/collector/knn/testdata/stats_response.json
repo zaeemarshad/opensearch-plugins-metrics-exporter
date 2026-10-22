@@ -4,11 +4,11 @@
     "successful": 9,
     "failed": 0
   },
-  "cluster_name": "osearch-store-cell-1",
+  "cluster_name": "test-cluster",
   "circuit_breaker_triggered": false,
   "model_index_status": null,
   "nodes": {
-    "_LV2KO5cQgi9IC77HdTiEA": {
+    "testnode0000000000001A": {
       "remote_vector_index_build_stats": {
         "repository_stats": {
           "successful_read_time_in_millis": 0,
@@ -44,7 +44,7 @@
       "load_success_count": 18,
       "training_memory_usage": 0,
       "indices_in_cache": {
-        "test_20250630_01_catalog_en": {
+        "test-index": {
           "graph_memory_usage": 18419,
           "graph_memory_usage_percentage": 0.4606088,
           "graph_count": 3
@@ -90,7 +90,7 @@
       "training_requests": 0,
       "script_compilation_errors": 0
     },
-    "enX59vgaQzqbomAYIKurfg": {
+    "testnode0000000000002B": {
       "remote_vector_index_build_stats": {
         "repository_stats": {
           "read_success_count": 0,
@@ -166,7 +166,7 @@
       "training_requests": 0,
       "script_compilation_errors": 0
     },
-    "FeKre5NZR62zCQ1j3aFcBA": {
+    "testnode0000000000003C": {
       "remote_vector_index_build_stats": {
         "repository_stats": {
           "successful_read_time_in_millis": 0,
@@ -202,7 +202,7 @@
       "load_success_count": 18,
       "training_memory_usage": 0,
       "indices_in_cache": {
-        "test_20250630_01_catalog_en": {
+        "test-index": {
           "graph_memory_usage": 12000,
           "graph_memory_usage_percentage": 0.30008718,
           "graph_count": 2
@@ -248,7 +248,7 @@
       "training_requests": 0,
       "script_compilation_errors": 0
     },
-    "WdsBQTLkSHKicg6xxQ3OYg": {
+    "testnode0000000000004D": {
       "remote_vector_index_build_stats": {
         "repository_stats": {
           "successful_read_time_in_millis": 0,
@@ -284,7 +284,7 @@
       "load_success_count": 15,
       "training_memory_usage": 0,
       "indices_in_cache": {
-        "test_20250630_01_catalog_en": {
+        "test-index": {
           "graph_memory_usage": 5698,
           "graph_memory_usage_percentage": 0.1424914,
           "graph_count": 1

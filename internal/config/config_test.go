@@ -37,6 +37,9 @@ func TestDefaultConfig(t *testing.T) {
 	if !cfg.EnableNeural {
 		t.Error("expected EnableNeural true")
 	}
+	if !cfg.EnableSearchBackpressure {
+		t.Error("expected EnableSearchBackpressure true")
+	}
 }
 
 func TestLoadFromEnv(t *testing.T) {
@@ -56,6 +59,7 @@ func TestLoadFromEnv(t *testing.T) {
 		"METRICS_PATH",
 		"ENABLE_KNN",
 		"ENABLE_NEURAL",
+		"ENABLE_SEARCH_BACKPRESSURE",
 	}
 
 	savedEnv := make(map[string]string)
@@ -92,6 +96,7 @@ func TestLoadFromEnv(t *testing.T) {
 	os.Setenv("METRICS_PATH", "/custom-metrics")
 	os.Setenv("ENABLE_KNN", "false")
 	os.Setenv("ENABLE_NEURAL", "false")
+	os.Setenv("ENABLE_SEARCH_BACKPRESSURE", "false")
 
 	cfg, err := Load()
 	if err != nil {
@@ -139,6 +144,9 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.EnableNeural {
 		t.Error("expected EnableNeural false")
+	}
+	if cfg.EnableSearchBackpressure {
+		t.Error("expected EnableSearchBackpressure false")
 	}
 }
 
